@@ -39,6 +39,32 @@ later.
 
 ## Getting started
 
+### Download and install
+
+Prebuilt installers are on the
+[releases page](https://github.com/GitRefDeploy/bet-tracker/releases/latest) —
+running the app needs no Node, Rust or build tools.
+
+| Your system | File to download |
+| --- | --- |
+| Windows 64-bit (almost everyone) | `Bet.Tracker_*_x64-setup.exe` |
+| Windows 32-bit | `Bet.Tracker_*_x86-setup.exe` |
+| Windows, if you prefer MSI | `Bet.Tracker_*_x64_en-US.msi` |
+| Debian, Ubuntu, Mint | `Bet.Tracker_*_amd64.deb` |
+| Any other Linux | `Bet.Tracker_*_amd64.AppImage` |
+
+An AppImage needs its executable bit set before it will run:
+
+```bash
+chmod +x Bet.Tracker*.AppImage
+./Bet.Tracker*.AppImage
+```
+
+> **These builds are not code-signed.** Windows will show a SmartScreen warning
+> about an unknown publisher — choose **More info → Run anyway**. A signing
+> certificate is a paid, identity-verified product, so releases are unsigned
+> for now; the download is genuine, it just cannot prove it cryptographically.
+
 ### Prerequisites
 
 - **Node.js 20+**
@@ -115,8 +141,15 @@ Migrations are plain SQL in ascending version order and are applied at startup.
 ## Releasing
 
 Pushing a tag like `v0.2.0` runs [`.github/workflows/release.yml`](.github/workflows/release.yml),
-which builds Windows and Linux installers, opens a **draft** GitHub Release, and
-publishes the signed `latest.json` updater manifest that installed apps poll.
+which builds installers for Windows x64, Windows x86 (32-bit) and Linux x64,
+opens a **draft** GitHub Release, and publishes the signed `latest.json` updater
+manifest that installed apps poll. A final job then checks that every installer,
+its signature and every manifest entry really landed, so a release that only
+half-published fails loudly instead of looking green.
+
+The release is created as a **draft**: review the assets, then publish it. The
+updater endpoint resolves `releases/latest`, which ignores drafts, so installed
+apps will not see a new version until you publish.
 
 Two things are needed for releases:
 
