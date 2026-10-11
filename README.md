@@ -1,65 +1,51 @@
 # Bet Tracker
 
-A local-first, open-source desktop app for tracking **betting profit and loss,
-promotional offers and bankroll**. Everything lives in a SQLite file on your
-machine — there is no server, no account, no sync and no telemetry.
+A local, open-source desktop app for tracking **betting profit and loss,
+promotional offers and bankroll**. Everythings stored in a SQLite file on your
+machine, there is no server, no account, no sync (potentially between devices in the future) and no telemetry.
 
-Built with [Tauri v2](https://v2.tauri.app/) + React + TypeScript, it targets
-Windows and Linux desktop from a single codebase, with a mobile port possible
-later.
+Built with [Tauri v2](https://v2.tauri.app/) + React + TypeScript
 
 ## Features
 
-- **Bets** — single, multi and same-game-multi, each tagged with a **bet type**
+- **Bets** - Single, multi and same-game-multi, each tagged with a **bet type**
   (Normal, Low-Hold, Arbitrage, Middle, Positive EV, Future, Sharp Money, No
   Sweat Bet, Qualifying Bet, Site Credit, Bonus Bet, Profit Boost) so bets can
   be grouped and compared later. Decimal, fractional or American odds entry;
   win/loss/void/cashout/half-win/half-loss settlement, and an optional closing
   price (CLV) per bet.
-- **Bonus bets are worth what they are actually worth** — a bonus bet is not
+- **Bonus bets are worth what they are actually worth** - A bonus bet is not
   your money and its stake is never returned, so a $25 bonus bet at 2.40 pays
   **$35** where $25 of cash would pay $60, and losing one costs nothing. Free
   stakes stay out of turnover and ROI while the profit they earn still counts.
-- **Promos** — bonus bets, free bets, odds boosts, cashback and deposit matches.
+- **Promos** - Bonus bets, free bets, odds boosts, cashback and deposit matches.
   Promo value is tracked **separately from organic profit**, so you can see how
   much of your edge is promotional.
-- **Bankroll** — deposits, withdrawals and adjustments, with a running balance
+- **Bankroll** - Deposits, withdrawals and adjustments, with a running balance
   and bankroll curve. Bet stakes and returns are derived from the bets table, so
   they are never double-counted.
-- **Analytics** — net profit, turnover, ROI, strike rate, cumulative P/L and
+- **Analytics** - Net profit, turnover, ROI, strike rate, cumulative P/L and
   breakdowns by sport and by bookmaker.
-- **Sports taxonomy** — thoroughbred, harness and greyhound racing, soccer, AFL,
-  NRL, cricket, tennis and more. Enable what you use, add your own.
-- **Optional integrations** — free-tier odds/form APIs are supported, but
+- **Sports categorisation** - Thoroughbred, harness and greyhound racing, soccer, AFL,
+  NRL, cricket, tennis and more to be added. Enable what you use, add your own.
+- **Optional integrations** — Free & paid odds/form APIs are supported, but
   **entirely optional**. The app is fully usable with manual entry only.
 
-## Screens
-
-| Screen | What it does |
-| --- | --- |
-| Dashboard | Net profit, turnover, ROI, strike rate, promo vs organic split, charts |
-| Bets | Filterable/sortable ledger of every bet |
-| Promos | Promo library with per-promo value delivered |
-| Bankroll | Cash movements, balance and bankroll curve |
-| Bookmakers | Your books and exchanges (nothing pre-configured) |
-| Sports | Enable/disable codes, add custom sports |
-| Settings | Currency, odds format, API keys, data export |
 
 ## Getting started
 
 ### Download and install
 
 Prebuilt installers are on the
-[releases page](https://github.com/GitRefDeploy/bet-tracker/releases/latest) —
-running the app needs no Node, Rust or build tools.
+[releases page](https://github.com/GitRefDeploy/bet-tracker/releases/latest)
 
-| Your system | File to download |
+| Operating System | Download |
 | --- | --- |
 | Windows 64-bit (almost everyone) | `Bet.Tracker_*_x64-setup.exe` |
 | Windows 32-bit | `Bet.Tracker_*_x86-setup.exe` |
-| Windows, if you prefer MSI | `Bet.Tracker_*_x64_en-US.msi` |
+| Also Windows (Preference)| `Bet.Tracker_*_x64_en-US.msi` |
 | Debian, Ubuntu, Mint | `Bet.Tracker_*_amd64.deb` |
-| Any other Linux | `Bet.Tracker_*_amd64.AppImage` |
+| Any other Linux OS | `Bet.Tracker_*_amd64.AppImage` |
 
 An AppImage needs its executable bit set before it will run:
 
@@ -68,16 +54,14 @@ chmod +x Bet.Tracker*.AppImage
 ./Bet.Tracker*.AppImage
 ```
 
-> **These builds are not code-signed.** Windows will show a SmartScreen warning
-> about an unknown publisher — choose **More info → Run anyway**. A signing
-> certificate is a paid, identity-verified product, so releases are unsigned
-> for now; the download is genuine, it just cannot prove it cryptographically.
+> **These builds are not code-signed.** Windows will likely show a SmartScreen warning
+> about an unknown publisher — choose **More info → Run anyway**.
 
 ### Prerequisites
 
 - **Node.js 20+**
 - **Rust** (stable) and the platform build tools for Tauri — see the
-  [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/).
+  [Tauri documentation](https://v2.tauri.app/start/prerequisites/).
 
 ### Develop
 
