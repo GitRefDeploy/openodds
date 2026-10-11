@@ -1,0 +1,85 @@
+name: CI
+
+# Catches breakage on every pull request instead of at release time. The
+# release workflow only runs on tags, so without this a broken change would
+# not be noticed until someone cut a version.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege — this workflow only reads the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Tests and typecheck
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build frontend
+        run: npm run build
+
+  tauri-build:
+    name: Tauri build smoke check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Compiles the Rust shell and embeds the frontend, but skips bundling
+      # installers: that needs extra tooling and is covered by the release
+      # workflow. No signing key is required because updater artifacts are
+      # enabled only in CI releases.
+      - name: Build the desktop app (no bundle)
+        run: npm run tauri -- build --no-bundle
