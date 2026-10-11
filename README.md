@@ -4,7 +4,7 @@ A local, open-source desktop app for tracking **betting profit and loss,
 promotional offers and bankroll**. Everythings stored in a SQLite file on your
 machine, there is no server, no account, no sync (potentially between devices in the future) and no telemetry.
 
-Built with [Tauri v2](https://v2.tauri.app/) + React + TypeScript
+Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 
 ## Features
 
