@@ -141,9 +141,10 @@ jobs:
 
   # The release job reports success if each platform's build and upload worked.
   # This job checks the thing a user actually cares about: that every installer
-  # is really on the release and that the updater manifest describes all three
-  # architectures. A green build that shipped an incomplete manifest would
-  # otherwise go unnoticed until someone's app failed to update.
+  # is really on the release, that each one carries an updater signature, and
+  # that the manifest describes all three architectures. A green build that
+  # shipped an incomplete manifest would otherwise go unnoticed until someone's
+  # app failed to update.
   verify:
     name: Verify published installers and manifest
     needs: publish
@@ -154,44 +155,56 @@ jobs:
       - name: Check every installer and the manifest are present
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job does not check the code out, so `gh` has no repository to
+          # infer from and would fail before testing anything.
+          REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
+          names=$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name')
           echo "Assets on release $TAG:"
-          gh release view "$TAG" --json assets --jq '.assets[].name' | sort
-
-          names=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          printf '%s\n' "$names" | sort
 
           fail=0
-          for expected in \
-            "_x64-setup.exe" \
-            "_x86-setup.exe" \
-            ".msi" \
-            ".deb" \
-            ".AppImage" \
-            "latest.json"
-          do
-            if printf '%s\n' "$names" | grep -qF -- "$expected"; then
+          for expected in "_x64-setup.exe" "_x86-setup.exe" ".msi" ".deb" ".AppImage" "latest.json"; do
+            # A here-string rather than a pipe: `grep -q` exits on the first
+            # match, which can SIGPIPE the writer, and `pipefail` would then
+            # turn that into a false failure.
+            if grep -qF -- "$expected" <<<"$names"; then
               echo "ok:   found *$expected"
             else
               echo "FAIL: no asset matching *$expected"
               fail=1
             fi
           done
-          [ "$fail" -eq 0 ] || { echo "One or more expected installers are missing."; exit 1; }
+
+          # An installer without its signature cannot be installed by the
+          # updater, so the two counts must agree.
+          installers=$(grep -cE '\.(msi|exe|deb|AppImage)$' <<<"$names" || true)
+          signatures=$(grep -c '\.sig$' <<<"$names" || true)
+          echo "installers=$installers signatures=$signatures"
+          if [ "$installers" -gt 0 ] && [ "$installers" -eq "$signatures" ]; then
+            echo "ok:   every installer has an updater signature"
+          else
+            echo "FAIL: installers and signatures do not match (updates would be rejected)"
+            fail=1
+          fi
 
           echo
           echo "Updater manifest:"
-          gh release download "$TAG" -p latest.json -O - --clobber | tee /tmp/latest.json
+          gh release download "$TAG" --repo "$REPO" -p latest.json -D "$RUNNER_TEMP" --clobber
+          cat "$RUNNER_TEMP/latest.json"
 
           echo
           for key in windows-x86_64 windows-i686 linux-x86_64; do
-            if jq -e --arg k "$key" '.platforms | has($k)' /tmp/latest.json >/dev/null; then
+            if jq -e --arg k "$key" '.platforms | has($k)' "$RUNNER_TEMP/latest.json" >/dev/null; then
               echo "ok:   latest.json advertises $key"
             else
               echo "FAIL: latest.json is missing the $key entry"
               fail=1
             fi
           done
-          [ "$fail" -eq 0 ] || exit 1
+
+          [ "$fail" -eq 0 ] || { echo "Release verification failed."; exit 1; }
+          echo "All release checks passed."
