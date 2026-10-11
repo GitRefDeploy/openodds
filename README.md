@@ -118,11 +118,12 @@ Pushing a tag like `v0.2.0` runs [`.github/workflows/release.yml`](.github/workf
 which builds Windows and Linux installers, opens a **draft** GitHub Release, and
 publishes the signed `latest.json` updater manifest that installed apps poll.
 
-Before the first release, do two things:
+Two things are needed for releases:
 
-1. **Point the updater at your repository.** Update the `endpoints` URL in
-   [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json) to
-   `https://github.com/<your-owner>/<your-repo>/releases/latest/download/latest.json`.
+1. **The updater endpoint is already configured** to
+   `https://github.com/GitRefDeploy/bet-tracker/releases/latest/download/latest.json`
+   in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json). If you fork this
+   project, change it to your own owner and repository name.
 2. **Add the signing secrets.** Generate a keypair once:
 
    ```bash

@@ -42,7 +42,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA5OUU4Q0RCNUM3RDI0RTMKUldUakpIMWMyNHllQ1d1Q21GdGo5Vk1HTDJKUVEyOG1HY1VrcXFleTRnUlo3NFB3NVN0eGkvK0sK",
       "endpoints": [
-        "https://github.com/YOUR_GITHUB_OWNER/bet-tracker/releases/latest/download/latest.json"
+        "https://github.com/GitRefDeploy/bet-tracker/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"
