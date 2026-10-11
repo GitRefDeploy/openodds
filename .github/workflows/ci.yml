@@ -44,13 +44,30 @@ jobs:
         run: npm run build
 
   tauri-build:
-    name: Tauri build smoke check
-    runs-on: ubuntu-22.04
+    name: Tauri build smoke check (${{ matrix.label }})
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Linux x64
+            platform: ubuntu-22.04
+            rustTarget: ""
+            targetArg: ""
+          # The release workflow ships a 32-bit Windows installer, and nothing
+          # else compiles that target. Without this check, a dependency that
+          # drops 32-bit support would only be discovered while cutting a
+          # release.
+          - label: Windows x86 (32-bit)
+            platform: windows-latest
+            rustTarget: "i686-pc-windows-msvc"
+            targetArg: "--target i686-pc-windows-msvc"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -68,11 +85,14 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rustTarget }}
 
       - name: Cache Rust build
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
+          key: ${{ matrix.label }}
 
       - name: Install dependencies
         run: npm ci
@@ -82,4 +102,4 @@ jobs:
       # workflow. No signing key is required because updater artifacts are
       # enabled only in CI releases.
       - name: Build the desktop app (no bundle)
-        run: npm run tauri -- build --no-bundle
+        run: npm run tauri -- build --no-bundle ${{ matrix.targetArg }}

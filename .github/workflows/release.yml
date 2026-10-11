@@ -1,8 +1,9 @@
 name: Release
 
-# Cutting a tag like v0.2.0 (or running this manually) builds the installers
-# for Windows and Linux, attaches them to a GitHub Release, and publishes the
-# signed `latest.json` updater manifest that installed apps poll.
+# Cutting a tag like v0.2.0 (or running this manually) builds installers for
+# Windows x64, Windows x86 (32-bit) and Linux, attaches them to a GitHub
+# Release, and publishes the signed `latest.json` updater manifest that
+# installed apps poll.
 on:
   push:
     tags:
@@ -15,21 +16,48 @@ concurrency:
 
 jobs:
   publish:
-    name: Build and publish (${{ matrix.platform }})
+    name: Build (${{ matrix.label }})
     runs-on: ${{ matrix.platform }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
+      # tauri-action merges each platform into the release's latest.json, but it
+      # does so by reading the existing file, adding its own entry and uploading
+      # a replacement. Two jobs running at once can both read the old copy and
+      # the loser's entry is silently lost. Serialising the builds keeps the
+      # manifest complete; a release is built rarely enough that the extra
+      # wall-clock time is worth the correctness.
+      max-parallel: 1
       matrix:
         include:
-          - platform: windows-latest
-          - platform: ubuntu-22.04
+          - label: Windows x64
+            platform: windows-latest
+            rustTarget: ""
+            args: "--bundles msi,nsis"
+          - label: Windows x86 (32-bit)
+            platform: windows-latest
+            rustTarget: "i686-pc-windows-msvc"
+            # NSIS only. Tauri's NSIS setup is itself a 32-bit executable, so
+            # the single installer works on both 32- and 64-bit Windows, and it
+            # avoids the much less travelled 32-bit MSI path.
+            args: "--target i686-pc-windows-msvc --bundles nsis"
+          - label: Linux x64
+            platform: ubuntu-22.04
+            rustTarget: ""
+            # deb covers Debian/Ubuntu and their derivatives; the AppImage is
+            # distro-agnostic and covers everything else. RPM is left out
+            # because it needs extra tooling on the runner and adds little over
+            # the AppImage.
+            args: "--bundles deb,appimage"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Tauri's docs recommend building on the oldest base system you intend to
+      # support, because the glibc version of the build machine becomes the
+      # app's minimum. ubuntu-22.04 is the documented baseline.
       - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -49,11 +77,18 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          # Empty for the native targets; the 32-bit cross-compile needs the
+          # i686 std library installed up front.
+          targets: ${{ matrix.rustTarget }}
 
       - name: Cache Rust build
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
+          # Separate cache per architecture, otherwise the x64 and x86 jobs
+          # evict each other's artifacts on every run.
+          key: ${{ matrix.label }}
 
       - name: Install frontend dependencies
         run: npm ci
@@ -69,21 +104,94 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Updater signing key. Generate with `npm run tauri signer generate`
-          # and store the PRIVATE key as a repository secret. The matching
-          # PUBLIC key lives in src-tauri/tauri.conf.json and is safe to commit.
+          # Updater signing key: signs each installer so installed apps can
+          # verify an update is genuine. The PRIVATE key is a repository secret;
+          # the matching PUBLIC key is committed in src-tauri/tauri.conf.json.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
           releaseName: "Bet Tracker v__VERSION__"
-          releaseBody: "Download the installer for your platform below."
+          releaseBody: |
+            Download the file for your machine:
+
+            - **Windows 64-bit** — `Bet.Tracker_*_x64-setup.exe` (recommended)
+              or the `.msi` if you prefer a traditional installer.
+            - **Windows 32-bit** — `Bet.Tracker_*_x86-setup.exe`.
+            - **Linux, Debian/Ubuntu** — the `.deb`.
+            - **Linux, everything else** — the `.AppImage`. Make it executable
+              first: `chmod +x Bet.Tracker*.AppImage`
+
+            These builds are not code-signed, so Windows SmartScreen will warn
+            about an unknown publisher. Choose **More info → Run anyway** to
+            continue.
           releaseDraft: true
           prerelease: false
           # Signed updater artifacts are enabled only here, so a local
           # `npm run tauri:build` works without any signing key.
-          args: --config src-tauri/tauri.updater.conf.json
+          args: "--config src-tauri/tauri.updater.conf.json ${{ matrix.args }}"
           # Publish the updater manifest alongside the bundles.
           uploadUpdaterJson: true
           # Prefer the NSIS installer on Windows for update downloads.
           updaterJsonPreferNsis: true
+          # latest.json is built by a read-modify-write against the release, so
+          # a transient API conflict is worth retrying rather than failing the
+          # whole release.
+          retryAttempts: 3
+
+  # The release job reports success if each platform's build and upload worked.
+  # This job checks the thing a user actually cares about: that every installer
+  # is really on the release and that the updater manifest describes all three
+  # architectures. A green build that shipped an incomplete manifest would
+  # otherwise go unnoticed until someone's app failed to update.
+  verify:
+    name: Verify published installers and manifest
+    needs: publish
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check every installer and the manifest are present
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          echo "Assets on release $TAG:"
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort
+
+          names=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+
+          fail=0
+          for expected in \
+            "_x64-setup.exe" \
+            "_x86-setup.exe" \
+            ".msi" \
+            ".deb" \
+            ".AppImage" \
+            "latest.json"
+          do
+            if printf '%s\n' "$names" | grep -qF -- "$expected"; then
+              echo "ok:   found *$expected"
+            else
+              echo "FAIL: no asset matching *$expected"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || { echo "One or more expected installers are missing."; exit 1; }
+
+          echo
+          echo "Updater manifest:"
+          gh release download "$TAG" -p latest.json -O - --clobber | tee /tmp/latest.json
+
+          echo
+          for key in windows-x86_64 windows-i686 linux-x86_64; do
+            if jq -e --arg k "$key" '.platforms | has($k)' /tmp/latest.json >/dev/null; then
+              echo "ok:   latest.json advertises $key"
+            else
+              echo "FAIL: latest.json is missing the $key entry"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || exit 1
