@@ -10,8 +10,16 @@ later.
 
 ## Features
 
-- **Bets** — single, multi and same-game-multi. Decimal, fractional or American
-  odds entry; win/loss/void/cashout/half-win/half-loss settlement.
+- **Bets** — single, multi and same-game-multi, each tagged with a **bet type**
+  (Normal, Low-Hold, Arbitrage, Middle, Positive EV, Future, Sharp Money, No
+  Sweat Bet, Qualifying Bet, Site Credit, Bonus Bet, Profit Boost) so bets can
+  be grouped and compared later. Decimal, fractional or American odds entry;
+  win/loss/void/cashout/half-win/half-loss settlement, and an optional closing
+  price (CLV) per bet.
+- **Bonus bets are worth what they are actually worth** — a bonus bet is not
+  your money and its stake is never returned, so a $25 bonus bet at 2.40 pays
+  **$35** where $25 of cash would pay $60, and losing one costs nothing. Free
+  stakes stay out of turnover and ROI while the profit they earn still counts.
 - **Promos** — bonus bets, free bets, odds boosts, cashback and deposit matches.
   Promo value is tracked **separately from organic profit**, so you can see how
   much of your edge is promotional.

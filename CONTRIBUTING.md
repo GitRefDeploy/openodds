@@ -39,6 +39,11 @@ Domain logic **must** be covered by unit tests in `src/domain/*.test.ts`. These
 are the contract for money and P/L correctness — a change to `computeProfitCents`
 without a test update will be rejected.
 
+The money rules a bet's class implies live in `src/domain/betClass.ts`: whether
+the stake was the punter's own cash, and whether a win gives it back. A bonus
+bet is neither, which is why it pays `stake x (odds - 1)` and why ROI must divide
+by `cashStakeCents` rather than the recorded stake.
+
 ```bash
 npm test -- --watch   # focused iteration
 ```
