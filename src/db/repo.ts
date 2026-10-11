@@ -15,6 +15,7 @@ import type {
 import type { PromoType, PromoValueType } from "@/domain/promo";
 import type { TransactionType } from "@/domain/bankroll";
 import type { BetStatus } from "@/domain/pnl";
+import { MIN_POSITION_LEGS } from "@/domain/position";
 
 export interface BetFilter {
   bookId?: number;
@@ -292,6 +293,34 @@ export class Repo {
     await this.db.execute(`DELETE FROM bet_legs WHERE bet_id = $1`, [id]);
     await this.db.execute(`DELETE FROM bet_promos WHERE bet_id = $1`, [id]);
     await this.db.execute(`DELETE FROM bets WHERE id = $1`, [id]);
+  }
+
+  /**
+   * Link bets into one position, returning its key, or null if there were not
+   * enough bets to make a position.
+   */
+  async groupBetsAsPosition(betIds: readonly number[]): Promise<number | null> {
+    if (betIds.length < MIN_POSITION_LEGS) return null;
+
+    const rows = await this.db.select<{ next: number }>(
+      `SELECT COALESCE(MAX(position_id), 0) + 1 AS next FROM bets`,
+    );
+    const positionId = rows[0]?.next ?? 1;
+
+    for (const betId of betIds) {
+      await this.db.execute(`UPDATE bets SET position_id = $1 WHERE id = $2`, [
+        positionId,
+        betId,
+      ]);
+    }
+    return positionId;
+  }
+
+  /** Break up a position, leaving the bets themselves untouched. */
+  async clearPosition(positionId: number): Promise<void> {
+    await this.db.execute(`UPDATE bets SET position_id = NULL WHERE position_id = $1`, [
+      positionId,
+    ]);
   }
 
   // ------------------------------------------------------------------ promos

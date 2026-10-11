@@ -6,6 +6,7 @@ import {
   isSettled,
   type BetStatus,
 } from "@/domain/pnl";
+import { legPayoutCents, summarisePosition } from "@/domain/position";
 import { computeStats, type BetStats } from "@/domain/stats";
 
 export interface EnrichedBet extends BetView {
@@ -16,6 +17,8 @@ export interface EnrichedBet extends BetView {
   cashStakeCents: number;
   /** True when the stake came from a credit, so nothing of theirs was risked. */
   freeStake: boolean;
+  /** What this bet pays if it is the one that wins. */
+  potentialPayoutCents: number;
 }
 
 export function enrichBet(bet: BetView): EnrichedBet {
@@ -37,14 +40,79 @@ export function enrichBet(bet: BetView): EnrichedBet {
     settled,
     cashStakeCents: cashStake,
     freeStake: traits.freeStake,
+    potentialPayoutCents: legPayoutCents({
+      stakeCents: bet.stake_cents,
+      odds: bet.odds,
+      stakeReturned: traits.stakeReturned,
+      freeStake: traits.freeStake,
+    }),
     // What actually came back: the profit, plus whatever cash stake was
     // returned alongside it. A bonus bet has no cash stake to add back.
     effectiveReturnCents: profitCents + (settled ? cashStake : 0),
   };
 }
 
+export interface PositionSummary {
+  id: number;
+  legs: EnrichedBet[];
+  cashStakedCents: number;
+  guaranteedPayoutCents: number;
+  marginPercent: number;
+  /** Profit already banked from the legs that have settled. */
+  realisedProfitCents: number;
+  settled: boolean;
+}
+
+/** Group the bets that share a position key into one summary each. */
+export function positionsFrom(
+  bets: readonly EnrichedBet[],
+): PositionSummary[] {
+  const groups = new Map<number, EnrichedBet[]>();
+  for (const bet of bets) {
+    if (bet.position_id === null || bet.position_id === undefined) continue;
+    const legs = groups.get(bet.position_id) ?? [];
+    legs.push(bet);
+    groups.set(bet.position_id, legs);
+  }
+
+  return [...groups.entries()]
+    .map(([id, legs]) => {
+      const totals = summarisePosition(
+        legs.map((leg) => {
+          const traits = traitsFor(leg.bet_class);
+          return {
+            stakeCents: leg.stake_cents,
+            odds: leg.odds,
+            stakeReturned: traits.stakeReturned,
+            freeStake: traits.freeStake,
+          };
+        }),
+      );
+      return {
+        id,
+        legs,
+        ...totals,
+        realisedProfitCents: legs.reduce(
+          (sum, leg) => sum + (leg.settled ? leg.profitCents : 0),
+          0,
+        ),
+        settled: legs.every((leg) => leg.settled),
+      };
+    })
+    .sort((a, b) => b.id - a.id);
+}
+
 export function enrichAll(bets: readonly BetView[]): EnrichedBet[] {
   return bets.map(enrichBet);
+}
+
+/** Margin for each position key, for showing against an individual bet. */
+export function marginByPosition(
+  bets: readonly EnrichedBet[],
+): Map<number, number> {
+  return new Map(
+    positionsFrom(bets).map((position) => [position.id, position.marginPercent]),
+  );
 }
 
 export function statsFor(bets: readonly EnrichedBet[]): BetStats {

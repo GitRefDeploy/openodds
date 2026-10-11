@@ -125,6 +125,16 @@ ALTER TABLE bets ADD COLUMN bet_class TEXT NOT NULL DEFAULT 'normal';
 ALTER TABLE bets ADD COLUMN clv REAL;
 `,
   },
+  {
+    version: 3,
+    // Positions are a shared key rather than a table of their own: a position
+    // is exactly the bets carrying its number, so the two cannot drift apart
+    // and deleting the last leg deletes the position with it.
+    sql: `
+ALTER TABLE bets ADD COLUMN position_id INTEGER;
+CREATE INDEX IF NOT EXISTS idx_bets_position ON bets(position_id);
+`,
+  },
 ];
 
 export const DEFAULT_SETTINGS: Record<string, string> = {

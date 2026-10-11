@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
+  type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
 import { useAppData } from "@/app/DataProvider";
@@ -25,9 +26,11 @@ import {
 import { formatMoney } from "@/domain/money";
 import { formatOdds } from "@/domain/odds";
 import { BET_STATUS_LABELS, type BetStatus } from "@/domain/pnl";
+import { MIN_POSITION_LEGS } from "@/domain/position";
 import { BET_TYPE_LABELS, type BetView } from "@/db/types";
 import {
   enrichAll,
+  marginByPosition,
   type EnrichedBet,
 } from "@/features/analytics/selectors";
 import { formatDate } from "@/lib/utils";
@@ -72,26 +75,55 @@ export function BetsPage() {
   const [sportId, setSportId] = useState("");
   const [status, setStatus] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const rows = useMemo(() => {
-    const enriched = enrichAll(bets);
-    return enriched.filter((b) => {
-      if (bookId && String(b.book_id) !== bookId) return false;
-      if (sportId && String(b.sport_id ?? "") !== sportId) return false;
-      if (status && b.status !== status) return false;
-      if (
-        search &&
-        !b.description.toLowerCase().includes(search.toLowerCase())
-      )
-        return false;
-      return true;
-    });
-  }, [bets, bookId, sportId, status, search]);
+  const allEnriched = useMemo(() => enrichAll(bets), [bets]);
+
+  // Margins come from every leg of a position, including legs the filters are
+  // hiding, so a narrowed view still reports the true number.
+  const margins = useMemo(() => marginByPosition(allEnriched), [allEnriched]);
+
+  const rows = useMemo(
+    () =>
+      allEnriched.filter((b) => {
+        if (bookId && String(b.book_id) !== bookId) return false;
+        if (sportId && String(b.sport_id ?? "") !== sportId) return false;
+        if (status && b.status !== status) return false;
+        if (
+          search &&
+          !b.description.toLowerCase().includes(search.toLowerCase())
+        )
+          return false;
+        return true;
+      }),
+    [allEnriched, bookId, sportId, status, search],
+  );
 
   const money = (cents: number) => formatMoney(cents, currency);
 
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: "select",
+        header: ({ table: t }) => (
+          <input
+            type="checkbox"
+            className="accent-emerald-500"
+            aria-label="Select all bets"
+            checked={t.getIsAllPageRowsSelected()}
+            onChange={t.getToggleAllPageRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            className="accent-emerald-500"
+            aria-label="Select bet"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        ),
+      }),
       columnHelper.accessor((r) => r.placed_at ?? r.created_at, {
         id: "date",
         header: "Date",
@@ -160,6 +192,25 @@ export function BetsPage() {
           </Badge>
         ),
       }),
+      columnHelper.accessor((r) => r.position_id, {
+        id: "position",
+        header: "Position",
+        cell: (info) => {
+          const positionId = info.getValue();
+          if (positionId === null || positionId === undefined) {
+            return <span className="text-slate-600">—</span>;
+          }
+          const margin = margins.get(positionId);
+          if (margin === undefined) {
+            return <Badge tone="info">Grouped</Badge>;
+          }
+          return (
+            <Badge tone={margin < 0 ? "negative" : "info"}>
+              {margin.toFixed(2)}%
+            </Badge>
+          );
+        },
+      }),
       columnHelper.accessor((r) => r.promo_value_cents, {
         id: "promo",
         header: "Promo",
@@ -221,17 +272,45 @@ export function BetsPage() {
       }),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currency, oddsFormat, repo, refresh],
+    [currency, oddsFormat, margins, repo, refresh],
   );
 
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting },
+    state: { sorting, rowSelection },
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    // Key rows on the bet id so a selection survives sorting and filtering.
+    getRowId: (row) => String(row.id),
+    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedIds = selectedRows.map((row) => row.original.id);
+  const selectedPositions = [
+    ...new Set(
+      selectedRows
+        .map((row) => row.original.position_id)
+        .filter((id): id is number => id !== null && id !== undefined),
+    ),
+  ];
+
+  async function groupSelected() {
+    await repo.groupBetsAsPosition(selectedIds);
+    setRowSelection({});
+    await refresh();
+  }
+
+  async function ungroupSelected() {
+    for (const positionId of selectedPositions) {
+      await repo.clearPosition(positionId);
+    }
+    setRowSelection({});
+    await refresh();
+  }
 
   return (
     <>
@@ -284,6 +363,32 @@ export function BetsPage() {
           </Select>
         </div>
       </Card>
+
+      {selectedIds.length > 0 && (
+        <Card className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm text-slate-300">
+            {selectedIds.length} selected
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={selectedIds.length < MIN_POSITION_LEGS}
+              onClick={groupSelected}
+            >
+              Group as position
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={selectedPositions.length === 0}
+              onClick={ungroupSelected}
+            >
+              Ungroup
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {rows.length === 0 ? (
         <EmptyState

@@ -26,6 +26,9 @@ Built with [Tauri v2](https://v2.tauri.app/) + React + TypeScript
   they are never double-counted.
 - **Analytics** - Net profit, turnover, ROI, strike rate, cumulative P/L and
   breakdowns by sport and by bookmaker.
+- **Positions** - Two or more bets that offset each other (an arbitrage, a
+  middle, a bonus bet hedged against a qualifying bet) can be grouped, and the
+  app reports the margin the group guarantees rather than two unrelated bets.
 - **Sports categorisation** - Thoroughbred, harness and greyhound racing, soccer, AFL,
   NRL, cricket, tennis and more to be added. Enable what you use, add your own.
 - **Optional integrations** — Free & paid odds/form APIs are supported, but

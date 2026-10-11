@@ -31,6 +31,11 @@ export interface BetRow {
   book_id: number;
   sport_id: number | null;
   event_id: number | null;
+  /**
+   * Shared with the other legs of the same position, or null. Not a foreign
+   * key: there is no positions table, the group *is* the bets holding the key.
+   */
+  position_id: number | null;
   description: string;
   bet_type: BetType;
   bet_class: BetClass;

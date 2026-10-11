@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { BetsPage } from "@/features/bets/BetsPage";
 import { PromosPage } from "@/features/promos/PromosPage";
+import { StatsPage } from "@/features/stats/StatsPage";
 import { BankrollPage } from "@/features/bankroll/BankrollPage";
 import { BooksPage } from "@/features/books/BooksPage";
 import { SportsPage } from "@/features/sports/SportsPage";
@@ -13,6 +14,7 @@ import { SetupWizard } from "@/features/settings/SetupWizard";
 type Route =
   | "dashboard"
   | "bets"
+  | "stats"
   | "promos"
   | "bankroll"
   | "books"
@@ -22,6 +24,7 @@ type Route =
 const NAV: { key: Route; label: string; icon: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: "▦" },
   { key: "bets", label: "Bets", icon: "◧" },
+  { key: "stats", label: "Stats", icon: "▤" },
   { key: "promos", label: "Promos", icon: "★" },
   { key: "bankroll", label: "Bankroll", icon: "◈" },
   { key: "books", label: "Bookmakers", icon: "◉" },
@@ -73,6 +76,7 @@ export function App() {
       <main className="flex-1 overflow-y-auto px-6 py-6">
         {route === "dashboard" && <DashboardPage />}
         {route === "bets" && <BetsPage />}
+        {route === "stats" && <StatsPage />}
         {route === "promos" && <PromosPage />}
         {route === "bankroll" && <BankrollPage />}
         {route === "books" && <BooksPage />}
