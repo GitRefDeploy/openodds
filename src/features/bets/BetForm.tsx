@@ -8,9 +8,16 @@ import {
   Select,
   Textarea,
 } from "@/components/ui/primitives";
-import { toCents } from "@/domain/money";
+import {
+  BET_CLASS_GROUP_LABELS,
+  BET_CLASS_LABELS,
+  classesInGroup,
+  traitsFor,
+  type BetClass,
+} from "@/domain/betClass";
+import { formatMoney, toCents } from "@/domain/money";
 import { combineLegOdds, formatOdds, parseOdds } from "@/domain/odds";
-import { BET_STATUSES, BET_STATUS_LABELS } from "@/domain/pnl";
+import { BET_STATUSES, BET_STATUS_LABELS, computeReturnCents } from "@/domain/pnl";
 import { suggestPromoValueCents } from "@/domain/promo";
 import { BET_TYPES, BET_TYPE_LABELS, type BetType, type BetView, type NewBet } from "@/db/types";
 import { todayISO } from "@/lib/utils";
@@ -35,14 +42,16 @@ export function BetForm({
   onClose: () => void;
   editing: BetView | null;
 }) {
-  const { repo, books, sports, promos, oddsFormat, refresh } = useAppData();
+  const { repo, books, sports, promos, oddsFormat, currency, refresh } = useAppData();
 
   const [bookId, setBookId] = useState(0);
   const [sportId, setSportId] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [betType, setBetType] = useState<BetType>("single");
+  const [betClass, setBetClass] = useState<BetClass>("normal");
   const [stake, setStake] = useState("");
   const [odds, setOdds] = useState("");
+  const [clv, setClv] = useState("");
   const [status, setStatus] = useState<string>("pending");
   const [returnAmount, setReturnAmount] = useState("");
   const [placedAt, setPlacedAt] = useState(todayISO());
@@ -52,6 +61,9 @@ export function BetForm({
   const [promoLinks, setPromoLinks] = useState<PromoDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  // The class to fall back to if the Bonus Bet box is unticked, so ticking it
+  // does not silently discard a choice like Arbitrage.
+  const [classBeforeBonus, setClassBeforeBonus] = useState<BetClass>("normal");
 
   const activeSports = useMemo(
     () => sports.filter((s) => s.enabled === 1),
@@ -66,8 +78,11 @@ export function BetForm({
       setSportId(activeSports[0]?.id ?? null);
       setDescription("");
       setBetType("single");
+      setBetClass("normal");
+      setClassBeforeBonus("normal");
       setStake("");
       setOdds("");
+      setClv("");
       setStatus("pending");
       setReturnAmount("");
       setPlacedAt(todayISO());
@@ -81,8 +96,11 @@ export function BetForm({
     setSportId(editing.sport_id);
     setDescription(editing.description);
     setBetType(editing.bet_type);
+    setBetClass(editing.bet_class ?? "normal");
+    setClassBeforeBonus("normal");
     setStake((editing.stake_cents / 100).toFixed(2));
     setOdds(formatOdds(editing.odds, "decimal"));
+    setClv(editing.clv ? formatOdds(editing.clv, "decimal") : "");
     setStatus(editing.status);
     setReturnAmount(
       editing.return_cents ? (editing.return_cents / 100).toFixed(2) : "",
@@ -124,6 +142,32 @@ export function BetForm({
 
   const stakeCents = toCents(stake);
   const effectiveOdds = isMulti && combinedOdds ? combinedOdds : parseOdds(odds, oddsFormat);
+  const traits = traitsFor(betClass);
+  const isBonusBet = betClass === "bonus_bet";
+
+  /**
+   * What a win would actually pay. This is the number that makes the bonus bet
+   * rule visible before saving: the same stake at the same price pays less when
+   * the stake is not returned.
+   */
+  const potentialPayoutCents = useMemo(() => {
+    if (stakeCents <= 0 || !(effectiveOdds > 1)) return null;
+    return computeReturnCents({
+      stakeCents,
+      decimalOdds: effectiveOdds,
+      status: "won",
+      stakeReturned: traits.stakeReturned,
+    });
+  }, [stakeCents, effectiveOdds, traits.stakeReturned]);
+
+  function toggleBonusBet() {
+    if (isBonusBet) {
+      setBetClass(classBeforeBonus === "bonus_bet" ? "normal" : classBeforeBonus);
+    } else {
+      setClassBeforeBonus(betClass);
+      setBetClass("bonus_bet");
+    }
+  }
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -135,6 +179,9 @@ export function BetForm({
       else if (!combinedOdds) next.legs = "Every leg needs a valid price";
     } else if (!(effectiveOdds > 1)) {
       next.odds = "Enter a valid price";
+    }
+    if (clv.trim() && !(parseOdds(clv, oddsFormat) > 1)) {
+      next.clv = "Closing price must be greater than 1";
     }
     if (status === "cashout" && toCents(returnAmount) <= 0) {
       next.returnAmount = "Enter the amount returned";
@@ -152,8 +199,10 @@ export function BetForm({
       sportId,
       description: description.trim(),
       betType,
+      betClass,
       stakeCents,
       odds: effectiveOdds,
+      clv: clv.trim() ? parseOdds(clv, oddsFormat) : null,
       status: status as NewBet["status"],
       returnCents: status === "cashout" ? toCents(returnAmount) : 0,
       placedAt,
@@ -240,7 +289,7 @@ export function BetForm({
           {errors.description && <ErrorText>{errors.description}</ErrorText>}
         </Field>
 
-        <Field label="Bet type">
+        <Field label="Format" hint="The shape of the bet.">
           <Select
             value={betType}
             onChange={(e) => setBetType(e.target.value as BetType)}
@@ -253,7 +302,56 @@ export function BetForm({
           </Select>
         </Field>
 
-        <Field label="Stake">
+        <Field label="Bet type" hint="How it was placed. Used to group bets on the dashboard.">
+          <Select
+            value={betClass}
+            onChange={(e) => setBetClass(e.target.value as BetClass)}
+          >
+            {(["strategy", "promo"] as const).map((group) => (
+              <optgroup key={group} label={BET_CLASS_GROUP_LABELS[group]}>
+                {classesInGroup(group).map((c) => (
+                  <option key={c} value={c}>
+                    {BET_CLASS_LABELS[c]}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </Select>
+        </Field>
+
+        <div className="md:col-span-2 rounded-lg border border-slate-800 p-3">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              className="accent-emerald-500"
+              checked={isBonusBet}
+              onChange={toggleBonusBet}
+            />
+            Bonus Bet
+          </label>
+          {isBonusBet ? (
+            <p className="mt-1 text-xs text-slate-500">
+              Not your money, and the stake is never returned — a{" "}
+              {formatMoney(stakeCents || 0, currency)} bonus bet at 2.40 pays
+              about {formatMoney(Math.round((stakeCents || 0) * 1.4), currency)}{" "}
+              where cash would pay{" "}
+              {formatMoney(Math.round((stakeCents || 0) * 2.4), currency)}. A
+              loss costs you nothing.
+            </p>
+          ) : traits.freeStake ? (
+            <p className="mt-1 text-xs text-slate-500">
+              {BET_CLASS_LABELS[betClass]} — not your money, so it is left out of
+              the amount staked. The stake is still returned if it wins.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-slate-500">
+              Tick this when the stake came from the bookmaker rather than your
+              bankroll.
+            </p>
+          )}
+        </div>
+
+        <Field label="Stake" hint={traits.freeStake ? "Not counted as cash at risk." : undefined}>
           <Input
             value={stake}
             onChange={(e) => setStake(e.target.value)}
@@ -273,6 +371,18 @@ export function BetForm({
             {errors.odds && <ErrorText>{errors.odds}</ErrorText>}
           </Field>
         )}
+
+        <Field
+          label="CLV"
+          hint="The closing price at the off. Leave blank if you do not know it."
+        >
+          <Input
+            value={clv}
+            onChange={(e) => setClv(e.target.value)}
+            placeholder={oddsFormat === "american" ? "+150" : "2.50"}
+          />
+          {errors.clv && <ErrorText>{errors.clv}</ErrorText>}
+        </Field>
 
         <Field label="Status">
           <Select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -313,6 +423,17 @@ export function BetForm({
             onChange={(e) => setSettledAt(e.target.value)}
           />
         </Field>
+
+        {potentialPayoutCents !== null && (
+          <p className="md:col-span-2 text-xs text-slate-400">
+            Pays{" "}
+            <span className="font-medium text-slate-200">
+              {formatMoney(potentialPayoutCents, currency)}
+            </span>{" "}
+            if it wins
+            {traits.freeStake ? ", none of which was staked by you" : ""}.
+          </p>
+        )}
       </div>
 
       {isMulti && (

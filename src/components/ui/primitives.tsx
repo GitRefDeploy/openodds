@@ -124,7 +124,7 @@ export function Badge({
   tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: "neutral" | "positive" | "negative" | "warning" | "info";
+  tone?: "neutral" | "positive" | "negative" | "warning" | "info" | "promo";
 }) {
   return (
     <span
@@ -135,6 +135,9 @@ export function Badge({
         tone === "negative" && "bg-rose-900/60 text-rose-300",
         tone === "warning" && "bg-amber-900/60 text-amber-300",
         tone === "info" && "bg-sky-900/60 text-sky-300",
+        // Promo-funded bets get their own colour so they read as a distinct
+        // category at a glance rather than as ordinary strategy bets.
+        tone === "promo" && "bg-violet-900/60 text-violet-200",
       )}
     >
       {children}

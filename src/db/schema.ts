@@ -114,6 +114,17 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE INDEX IF NOT EXISTS idx_transactions_book ON transactions(book_id);
 `,
   },
+  {
+    version: 2,
+    // `bet_type` records the shape of a bet (single, multi) and is labelled
+    // "Format" in the UI. `bet_class` is the separate question of how the bet
+    // was placed — arbitrage, bonus bet, and so on. `clv` is the closing price
+    // at the off, which is what lets a bet be judged against the market.
+    sql: `
+ALTER TABLE bets ADD COLUMN bet_class TEXT NOT NULL DEFAULT 'normal';
+ALTER TABLE bets ADD COLUMN clv REAL;
+`,
+  },
 ];
 
 export const DEFAULT_SETTINGS: Record<string, string> = {

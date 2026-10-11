@@ -1,26 +1,45 @@
 import type { BetView } from "@/db/types";
-import { computeProfitCents, isSettled, type BetStatus } from "@/domain/pnl";
+import { traitsFor } from "@/domain/betClass";
+import {
+  cashStakeCents,
+  computeProfitCents,
+  isSettled,
+  type BetStatus,
+} from "@/domain/pnl";
 import { computeStats, type BetStats } from "@/domain/stats";
 
 export interface EnrichedBet extends BetView {
   profitCents: number;
   settled: boolean;
   effectiveReturnCents: number;
+  /** The part of the stake that was the punter's own cash. */
+  cashStakeCents: number;
+  /** True when the stake came from a credit, so nothing of theirs was risked. */
+  freeStake: boolean;
 }
 
 export function enrichBet(bet: BetView): EnrichedBet {
-  const profitCents = computeProfitCents({
+  const traits = traitsFor(bet.bet_class);
+  const settlement = {
     stakeCents: bet.stake_cents,
     decimalOdds: bet.odds,
     status: bet.status as BetStatus,
     returnCents: bet.return_cents,
-  });
+    stakeReturned: traits.stakeReturned,
+    freeStake: traits.freeStake,
+  };
+  const profitCents = computeProfitCents(settlement);
   const settled = isSettled(bet.status as BetStatus);
+  const cashStake = cashStakeCents(settlement);
   return {
     ...bet,
     profitCents,
     settled,
-    effectiveReturnCents: profitCents + (settled ? bet.stake_cents : 0),
+    cashStakeCents: cashStake,
+    freeStake: traits.freeStake,
+    // What actually came back: the profit, plus whatever cash stake was
+    // returned alongside it. A bonus bet has no cash stake to add back.
+    effectiveReturnCents: profitCents + (settled ? cashStake : 0),
   };
 }
 
@@ -31,7 +50,7 @@ export function enrichAll(bets: readonly BetView[]): EnrichedBet[] {
 export function statsFor(bets: readonly EnrichedBet[]): BetStats {
   return computeStats(
     bets.map((b) => ({
-      stakeCents: b.stake_cents,
+      stakeCents: b.cashStakeCents,
       profitCents: b.profitCents,
       decimalOdds: b.odds,
       settled: b.settled,
@@ -66,7 +85,9 @@ function groupBy(
       count: 0,
       roi: 0,
     };
-    existing.stakedCents += bet.stake_cents;
+    // Cash only. Counting a bonus bet's notional stake here would inflate the
+    // amount at risk and flatter every ROI figure built on it.
+    existing.stakedCents += bet.cashStakeCents;
     existing.profitCents += bet.profitCents;
     existing.count += 1;
     map.set(key, existing);

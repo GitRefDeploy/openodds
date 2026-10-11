@@ -2,6 +2,7 @@ import { z } from "zod";
 import { toCents } from "@/domain/money";
 import { PROMO_TYPES } from "@/domain/promo";
 import { BET_STATUSES } from "@/domain/pnl";
+import { BET_CLASSES } from "@/domain/betClass";
 import { BET_TYPES } from "@/db/types";
 
 const moneyString = (message: string) =>
@@ -42,7 +43,14 @@ export const betSchema = z.object({
   bookId: z.number().int().positive("Choose a bookmaker"),
   description: z.string().trim().min(1, "Describe the bet"),
   betType: z.enum(BET_TYPES as [string, ...string[]]),
+  betClass: z.enum(BET_CLASSES as [string, ...string[]]),
   stake: moneyString("Stake must be greater than zero"),
+  // Closing price is optional, but if given it has to be a real price.
+  clv: z
+    .string()
+    .refine((v) => v.trim() === "" || Number(v) > 1, {
+      message: "Closing price must be greater than 1",
+    }),
   status: z.enum(BET_STATUSES as [string, ...string[]]),
   placedAt: z.string().min(1, "Choose a date"),
 });

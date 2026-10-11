@@ -1,3 +1,4 @@
+import type { BetClass } from "@/domain/betClass";
 import type { BetStatus } from "@/domain/pnl";
 import type { PromoType, PromoValueType } from "@/domain/promo";
 import type { TransactionType } from "@/domain/bankroll";
@@ -32,8 +33,11 @@ export interface BetRow {
   event_id: number | null;
   description: string;
   bet_type: BetType;
+  bet_class: BetClass;
   stake_cents: number;
   odds: number;
+  /** Closing price at the off, or null when it was never recorded. */
+  clv: number | null;
   status: BetStatus;
   return_cents: number;
   placed_at: string | null;
@@ -42,6 +46,12 @@ export interface BetRow {
   created_at: string;
 }
 
+/**
+ * The shape of a bet, shown as "Format" in the UI.
+ *
+ * Deliberately not called a type in user-facing text any more, because
+ * `BetClass` now owns the "Bet type" label.
+ */
 export type BetType = "single" | "multi" | "same_game_multi";
 
 export const BET_TYPES: readonly BetType[] = ["single", "multi", "same_game_multi"];
@@ -112,8 +122,10 @@ export interface NewBet {
   sportId: number | null;
   description: string;
   betType: BetType;
+  betClass: BetClass;
   stakeCents: number;
   odds: number;
+  clv: number | null;
   status: BetStatus;
   returnCents: number;
   placedAt: string | null;

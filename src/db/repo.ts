@@ -210,14 +210,17 @@ export class Repo {
     if (betId === null) {
       await this.db.execute(
         `INSERT INTO bets
-           (book_id, sport_id, description, bet_type, stake_cents, odds, status,
-            return_cents, placed_at, settled_at, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+           (book_id, sport_id, description, bet_type, bet_class, clv,
+            stake_cents, odds, status, return_cents, placed_at, settled_at,
+            notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           input.bookId,
           input.sportId,
           input.description,
           input.betType,
+          input.betClass,
+          input.clv,
           input.stakeCents,
           input.odds,
           input.status,
@@ -234,14 +237,17 @@ export class Repo {
     } else {
       await this.db.execute(
         `UPDATE bets SET book_id = $1, sport_id = $2, description = $3,
-           bet_type = $4, stake_cents = $5, odds = $6, status = $7,
-           return_cents = $8, placed_at = $9, settled_at = $10, notes = $11
-         WHERE id = $12`,
+           bet_type = $4, bet_class = $5, clv = $6, stake_cents = $7,
+           odds = $8, status = $9, return_cents = $10, placed_at = $11,
+           settled_at = $12, notes = $13
+         WHERE id = $14`,
         [
           input.bookId,
           input.sportId,
           input.description,
           input.betType,
+          input.betClass,
+          input.clv,
           input.stakeCents,
           input.odds,
           input.status,

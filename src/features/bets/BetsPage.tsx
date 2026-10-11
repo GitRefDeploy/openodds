@@ -17,6 +17,11 @@ import {
   PageHeader,
   Select,
 } from "@/components/ui/primitives";
+import {
+  BET_CLASS_LABELS,
+  groupOf,
+  type BetClass,
+} from "@/domain/betClass";
 import { formatMoney } from "@/domain/money";
 import { formatOdds } from "@/domain/odds";
 import { BET_STATUS_LABELS, type BetStatus } from "@/domain/pnl";
@@ -42,6 +47,20 @@ const STATUS_TONE: Record<
   half_won: "positive",
   half_lost: "negative",
 };
+
+/**
+ * Promo-funded bets share a colour so they stand out from ordinary strategy
+ * bets, and arbitrage gets its own because it is the one you are judging on a
+ * margin rather than on whether it won.
+ */
+function classTone(
+  betClass: BetClass,
+): "neutral" | "positive" | "info" | "promo" {
+  if (groupOf(betClass) === "promo") return "promo";
+  if (betClass === "arbitrage") return "info";
+  if (betClass === "positive_ev" || betClass === "sharp_money") return "positive";
+  return "neutral";
+}
 
 export function BetsPage() {
   const { bets, books, sports, currency, oddsFormat, repo, refresh } =
@@ -112,11 +131,32 @@ export function BetsPage() {
         header: "Odds",
         cell: (info) => formatOdds(info.getValue(), oddsFormat),
       }),
+      columnHelper.accessor((r) => r.clv, {
+        id: "clv",
+        header: "CLV",
+        cell: (info) =>
+          info.getValue() ? (
+            <span className="text-slate-400">
+              {formatOdds(info.getValue() as number, oddsFormat)}
+            </span>
+          ) : (
+            <span className="text-slate-600">—</span>
+          ),
+      }),
       columnHelper.accessor("status", {
         header: "Status",
         cell: (info) => (
           <Badge tone={STATUS_TONE[info.getValue() as BetStatus]}>
             {BET_STATUS_LABELS[info.getValue() as BetStatus]}
+          </Badge>
+        ),
+      }),
+      columnHelper.accessor((r) => r.bet_class, {
+        id: "betClass",
+        header: "Bet type",
+        cell: (info) => (
+          <Badge tone={classTone(info.getValue())}>
+            {BET_CLASS_LABELS[info.getValue()] ?? info.getValue()}
           </Badge>
         ),
       }),

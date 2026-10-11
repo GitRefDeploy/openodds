@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cashStakeCents,
   computeProfitCents,
   computeReturnCents,
   isSettled,
@@ -79,5 +80,122 @@ describe("isSettled", () => {
     expect(isSettled("pending")).toBe(false);
     expect(isSettled("won")).toBe(true);
     expect(isSettled("void")).toBe(true);
+  });
+});
+
+describe("bonus bets, where the stake is never returned", () => {
+  // These three come from a real bet log, so they are a regression guard on the
+  // whole point of the feature: a $25 bonus bet at 2.40 pays $35, not the $60
+  // that $25 of cash would have paid.
+  it("reproduces the payouts recorded in a real bet log", () => {
+    const payoutAt = (odds: number) =>
+      computeReturnCents({
+        stakeCents: 2500,
+        decimalOdds: odds,
+        status: "won",
+        stakeReturned: false,
+      });
+
+    expect(payoutAt(2.4)).toBe(3500);
+    expect(payoutAt(2.45)).toBe(3625);
+    expect(payoutAt(2.6)).toBe(4000);
+  });
+
+  it("still pays stake x odds for the same bet with cash", () => {
+    expect(
+      computeReturnCents({ stakeCents: 2500, decimalOdds: 2.4, status: "won" }),
+    ).toBe(6000);
+  });
+
+  it("costs nothing at all when it loses", () => {
+    expect(
+      computeProfitCents({
+        stakeCents: 2500,
+        decimalOdds: 2.4,
+        status: "lost",
+        stakeReturned: false,
+        freeStake: true,
+      }),
+    ).toBe(0);
+  });
+
+  it("credits the full payout as profit, since none of it was the punter's", () => {
+    expect(
+      computeProfitCents({
+        stakeCents: 2500,
+        decimalOdds: 2.4,
+        status: "won",
+        stakeReturned: false,
+        freeStake: true,
+      }),
+    ).toBe(3500);
+  });
+
+  it("hands back nothing for a void, because there was never cash to return", () => {
+    expect(
+      computeReturnCents({
+        stakeCents: 2500,
+        decimalOdds: 2.4,
+        status: "void",
+        stakeReturned: false,
+      }),
+    ).toBe(0);
+  });
+
+  it("pays only the winning half of a half win", () => {
+    expect(
+      computeReturnCents({
+        stakeCents: 10000,
+        decimalOdds: 2.5,
+        status: "half_won",
+        stakeReturned: false,
+      }),
+    ).toBe(7500);
+  });
+
+  it("returns nothing for a half loss", () => {
+    expect(
+      computeReturnCents({
+        stakeCents: 10000,
+        decimalOdds: 2.5,
+        status: "half_lost",
+        stakeReturned: false,
+      }),
+    ).toBe(0);
+  });
+
+  it("treats a cashout as real money regardless of what funded the bet", () => {
+    expect(
+      computeReturnCents({
+        stakeCents: 2500,
+        decimalOdds: 2.4,
+        status: "cashout",
+        returnCents: 1800,
+        stakeReturned: false,
+      }),
+    ).toBe(1800);
+  });
+});
+
+describe("site credit, a free stake that is still returned", () => {
+  it("pays like cash while risking none of the punter's money", () => {
+    const input = {
+      stakeCents: 5000,
+      decimalOdds: 2,
+      status: "won",
+      freeStake: true,
+    } as const;
+    expect(computeReturnCents(input)).toBe(10000);
+    expect(computeProfitCents(input)).toBe(10000);
+  });
+});
+
+describe("cashStakeCents", () => {
+  it("counts a normal stake in full", () => {
+    expect(cashStakeCents({ stakeCents: 10000 })).toBe(10000);
+  });
+
+  it("excludes a stake that came from a credit", () => {
+    expect(cashStakeCents({ stakeCents: 10000, freeStake: true })).toBe(0);
   });
 });
