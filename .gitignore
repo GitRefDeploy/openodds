@@ -1,0 +1,17 @@
+node_modules/
+dist/
+release/
+src-tauri/target/
+src-tauri/gen/
+app-icon.png
+
+# Local user data / secrets must never be committed
+*.local
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+*.key
+credentials.json

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Bet Tracker",
+  "version": "0.1.0",
+  "identifier": "io.github.bet-tracker.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Bet Tracker",
+        "width": 1320,
+        "height": 860,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Finance",
+    "shortDescription": "Track betting profit, promos and bankroll.",
+    "longDescription": "A local-first, open-source tracker for sports betting profit and loss, promotional offers and bankroll.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA5OUU4Q0RCNUM3RDI0RTMKUldUakpIMWMyNHllQ1d1Q21GdGo5Vk1HTDJKUVEyOG1HY1VrcXFleTRnUlo3NFB3NVN0eGkvK0sK",
+      "endpoints": [
+        "https://github.com/YOUR_GITHUB_OWNER/bet-tracker/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}
