@@ -93,7 +93,7 @@ npm run typecheck      # TypeScript
 
 ## Architecture
 
-The guiding rule is **thin UI, pure domain core, adapters at the edges**. That
+The guiding rule is **simple UI, pure domain core, adapters at the edges**. That
 keeps business logic testable and portable to another shell (e.g. mobile) later.
 
 ```
@@ -105,8 +105,6 @@ src/
   components/  Small UI primitives
 src-tauri/     Rust shell: SQL plugin registration + credential commands
 ```
-
-Key decisions:
 
 - **Money is stored as integer cents.** Floats only appear at the display
   boundary, which removes rounding drift.
@@ -124,7 +122,7 @@ Migrations are plain SQL in ascending version order and are applied at startup.
 
 ## Security and privacy
 
-- No secrets are committed. There are no API keys in the repository.
+- No secrets are committed.
 - API keys you enter are stored in the **OS credential store** (Windows
   Credential Manager / Linux Secret Service), never in the repo or a config file.
 - Your betting data never leaves your machine. The only outbound requests are to
