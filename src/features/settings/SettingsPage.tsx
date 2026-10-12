@@ -395,7 +395,8 @@ function DataCard({ onExport }: { onExport: () => void | Promise<void> }) {
         </Button>
       </div>
       <p className="mt-3 text-xs text-faint">
-        CSV import from bookmaker statements is planned for a future release.
+        Bringing bets in from a bookmaker's CSV statement lives on the Import
+        page. Nothing is uploaded; the file is read on this machine.
       </p>
     </Card>
   );

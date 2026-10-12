@@ -13,6 +13,7 @@ import { BooksPage } from "@/features/books/BooksPage";
 import { SportsPage } from "@/features/sports/SportsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { SetupWizard } from "@/features/settings/SetupWizard";
+import { ImportPage } from "@/features/import/ImportPage";
 
 type Route =
   | "dashboard"
@@ -20,6 +21,7 @@ type Route =
   | "stats"
   | "promos"
   | "bankroll"
+  | "import"
   | "books"
   | "sports"
   | "settings";
@@ -46,6 +48,7 @@ const NAV_GROUPS: {
     items: [
       { key: "promos", label: "Promos", icon: "promos" },
       { key: "bankroll", label: "Bankroll", icon: "bankroll" },
+      { key: "import", label: "Import", icon: "import" },
     ],
   },
   {
@@ -130,6 +133,7 @@ export function App() {
         {route === "stats" && <StatsPage />}
         {route === "promos" && <PromosPage />}
         {route === "bankroll" && <BankrollPage />}
+        {route === "import" && <ImportPage onNavigate={setRoute} />}
         {route === "books" && <BooksPage />}
         {route === "sports" && <SportsPage />}
         {route === "settings" && <SettingsPage />}

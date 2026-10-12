@@ -300,6 +300,8 @@ describe("migration 5 — one word per concept", () => {
     expect(await betRow(db, betId)).toEqual({
       ...betBefore,
       bet_class: "odds_boost",
+      // The import fingerprint arrived later; a bet entered by hand has none.
+      import_ref: null,
     });
 
     // The link between them, and the value it carries, is untouched.
@@ -343,5 +345,50 @@ describe("migration 5 — one word per concept", () => {
 
     expect((await promoRow(db, promoId)).type).toBe("mystery_offer");
     expect((await betRow(db, betId)).bet_class).toBe("mystery_class");
+  });
+});
+
+async function addBetWithRef(db: Database, ref: string | null): Promise<void> {
+  const bookId = await addBook(db, `Book ${Math.random()}`);
+  await db.execute(
+    `INSERT INTO bets (book_id, description, stake_cents, odds, status, import_ref)
+     VALUES ($1, 'Imported', 1000, 2.0, 'won', $2)`,
+    [bookId, ref],
+  );
+}
+
+describe("the import fingerprint", () => {
+  it("adds the column and its index to an existing database", async () => {
+    const db = await openAt(5);
+    expect(await columnsOf(db, "bets")).not.toContain("import_ref");
+
+    await migrate(db);
+
+    expect(await columnsOf(db, "bets")).toContain("import_ref");
+    expect(await indexesOn(db, "bets")).toContain("idx_bets_import_ref");
+  });
+
+  it("allows any number of bets entered by hand", async () => {
+    // The index is partial on purpose: NULL is every hand-entered bet, and a
+    // plain UNIQUE would let only one of them exist.
+    const db = await openAt(5);
+    await migrate(db);
+
+    await addBetWithRef(db, null);
+    await addBetWithRef(db, null);
+
+    const rows = await db.select(`SELECT id FROM bets`);
+    expect(rows).toHaveLength(2);
+  });
+
+  it("refuses the same statement row twice", async () => {
+    const db = await openAt(5);
+    await migrate(db);
+
+    await addBetWithRef(db, "TAB|2026-03-10|5000|2.4000|won|flemington r3 #4");
+
+    await expect(
+      addBetWithRef(db, "TAB|2026-03-10|5000|2.4000|won|flemington r3 #4"),
+    ).rejects.toThrow();
   });
 });

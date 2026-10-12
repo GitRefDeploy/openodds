@@ -17,6 +17,29 @@ import type { TransactionType } from "@/domain/bankroll";
 import type { BetStatus } from "@/domain/pnl";
 import { MIN_POSITION_LEGS } from "@/domain/position";
 
+/** One bet from a statement, ready to be written. */
+export interface ImportedBet {
+  /** Identity of the source row; see `domain/csvImport.ts`. */
+  importRef: string;
+  bookName: string;
+  sportName?: string | null;
+  description: string;
+  stakeCents: number;
+  odds: number;
+  status: BetStatus;
+  returnCents: number;
+  placedAt: string;
+  notes: string;
+}
+
+export interface ImportOutcome {
+  imported: number;
+  /** Rows already present from an earlier import of the same statement. */
+  skipped: number;
+  /** Bookmakers the import created, so the UI can say which. */
+  createdBooks: string[];
+}
+
 export interface BetFilter {
   bookId?: number;
   sportId?: number;
@@ -293,6 +316,120 @@ export class Repo {
     await this.db.execute(`DELETE FROM bet_legs WHERE bet_id = $1`, [id]);
     await this.db.execute(`DELETE FROM bet_promos WHERE bet_id = $1`, [id]);
     await this.db.execute(`DELETE FROM bets WHERE id = $1`, [id]);
+  }
+
+  // ------------------------------------------------------------------ import
+  /**
+   * Find a bookmaker by name, or create it, returning its id.
+   *
+   * Statements name their bookmaker in whatever spelling the book uses, so an
+   * import of "TAB" must not create a second "tab": the lookup is
+   * case-insensitive and the first spelling seen is the one kept.
+   */
+  async ensureBook(name: string, currency = "AUD"): Promise<number> {
+    return (await this.resolveBook(name, currency)).id;
+  }
+
+  private async resolveBook(
+    name: string,
+    currency = "AUD",
+  ): Promise<{ id: number; created: boolean }> {
+    const trimmed = name.trim();
+    const existing = await this.db.select<{ id: number }>(
+      `SELECT id FROM books WHERE lower(name) = $1`,
+      [trimmed.toLowerCase()],
+    );
+    if (existing[0]) return { id: existing[0].id, created: false };
+
+    await this.db.execute(`INSERT INTO books (name, currency) VALUES ($1, $2)`, [
+      trimmed,
+      currency,
+    ]);
+    const rows = await this.db.select<{ id: number }>(
+      `SELECT last_insert_rowid() AS id`,
+    );
+    return { id: rows[0].id, created: true };
+  }
+
+  /** Every fingerprint already imported, for previewing an import. */
+  async listImportRefs(): Promise<Set<string>> {
+    const rows = await this.db.select<{ import_ref: string }>(
+      `SELECT import_ref FROM bets WHERE import_ref IS NOT NULL`,
+    );
+    return new Set(rows.map((row) => row.import_ref));
+  }
+
+  /**
+   * Write a whole statement's worth of bets.
+   *
+   * Idempotent by fingerprint rather than by transaction, which is what makes
+   * it safe on an adapter without one: a batch that stops half way can be run
+   * again and the bets that did land are recognised and skipped. Books named by
+   * the statement that do not exist yet are created, since an import that
+   * refuses because the bookmaker is new would make the user type it in twice.
+   */
+  async importBets(records: readonly ImportedBet[]): Promise<ImportOutcome> {
+    const run = async (): Promise<ImportOutcome> => {
+      const createdBooks: string[] = [];
+      const bookIds = new Map<string, number>();
+      const sports = await this.listSports();
+      const sportIds = new Map<string, number>();
+      for (const sport of sports) {
+        sportIds.set(sport.name.toLowerCase(), sport.id);
+        sportIds.set(sport.slug.toLowerCase(), sport.id);
+      }
+
+      let imported = 0;
+      let skipped = 0;
+
+      for (const record of records) {
+        const bookKey = record.bookName.trim().toLowerCase();
+        let bookId = bookIds.get(bookKey);
+        if (bookId === undefined) {
+          const resolved = await this.resolveBook(record.bookName);
+          bookId = resolved.id;
+          if (resolved.created) createdBooks.push(record.bookName.trim());
+          bookIds.set(bookKey, bookId);
+        }
+
+        const already = await this.db.select<{ id: number }>(
+          `SELECT id FROM bets WHERE import_ref = $1`,
+          [record.importRef],
+        );
+        if (already.length > 0) {
+          skipped++;
+          continue;
+        }
+
+        const sportId = record.sportName
+          ? (sportIds.get(record.sportName.trim().toLowerCase()) ?? null)
+          : null;
+
+        await this.db.execute(
+          `INSERT INTO bets
+             (book_id, sport_id, description, bet_type, bet_class, stake_cents,
+              odds, status, return_cents, placed_at, notes, import_ref)
+           VALUES ($1, $2, $3, 'single', 'normal', $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            bookId,
+            sportId,
+            record.description,
+            record.stakeCents,
+            record.odds,
+            record.status,
+            record.returnCents,
+            record.placedAt,
+            record.notes,
+            record.importRef,
+          ],
+        );
+        imported++;
+      }
+
+      return { imported, skipped, createdBooks };
+    };
+
+    return this.db.transaction ? this.db.transaction(run) : run();
   }
 
   /**

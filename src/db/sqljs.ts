@@ -48,22 +48,54 @@ export async function openSqlJsDatabase(): Promise<Database> {
   const SQL = await initSqlJs({ locateFile: () => wasmUrl });
   const db = new SQL.Database(loadPersisted());
 
+  // Persisting the whole database to localStorage is not free — it serialises
+  // and base64-encodes every byte — so inside a transaction we do it once, at
+  // the end, rather than once per statement. Otherwise importing a few hundred
+  // bets would rewrite the file a few hundred times.
+  let batching = false;
+
+  const write = (sql: string, params: readonly unknown[]) => {
+    const q = toPositional(sql, params);
+    // With no bound parameters we must call run(sql) rather than run(sql, []):
+    // an empty-but-truthy array makes sql.js prepare only the first statement,
+    // which would silently drop the rest of a multi-statement migration.
+    if (q.params.length > 0) {
+      db.run(q.sql, q.params as never);
+    } else {
+      db.run(q.sql);
+    }
+  };
+
   return {
     async execute(sql, params = []) {
-      const q = toPositional(sql, params);
-      // With no bound parameters we must call run(sql) rather than run(sql, []):
-      // an empty-but-truthy array makes sql.js prepare only the first statement,
-      // which would silently drop the rest of a multi-statement migration.
-      if (q.params.length > 0) {
-        db.run(q.sql, q.params as never);
-      } else {
-        db.run(q.sql);
-      }
-      persist(db);
+      write(sql, params);
+      if (!batching) persist(db);
     },
     async select<T>(sql: string, params: readonly unknown[] = []) {
       const q = toPositional(sql, params);
       return toRows<T>(db, q.sql, q.params);
+    },
+    async transaction<T>(run: () => Promise<T>): Promise<T> {
+      // Nested calls join the outer transaction rather than issuing a second
+      // BEGIN, which SQLite rejects.
+      if (batching) return run();
+      write("BEGIN", []);
+      batching = true;
+      try {
+        const result = await run();
+        batching = false;
+        write("COMMIT", []);
+        persist(db);
+        return result;
+      } catch (error) {
+        batching = false;
+        try {
+          write("ROLLBACK", []);
+        } catch {
+          // Nothing to roll back.
+        }
+        throw error;
+      }
     },
     async close() {
       persist(db);

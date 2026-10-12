@@ -36,6 +36,13 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
 - **Positions** - Two or more bets that offset each other (an arbitrage, a
   middle, a bonus bet hedged against a qualifying bet) can be grouped, and the
   app reports the margin the group guarantees rather than two unrelated bets.
+- **CSV import from bookmaker statements** - Drop in the CSV a bookmaker exports
+  and the app recognises the columns, saying what each one is being read as
+  before anything is written. Rows it cannot read are **listed with their line
+  numbers and a reason** — never dropped, because a silently skipped row leaves
+  totals that look right. Importing the same statement twice does not double
+  every bet: each row carries a fingerprint of its own contents, so a re-import
+  is recognised and skipped.
 - **Light and dark themes** - Every colour comes from one set of semantic tokens
   (`canvas`, `panel`, `ink`, `muted`, `positive`, `negative`, …), so the theme
   cannot be applied to half the app. Follow the operating system or pin it;
@@ -136,6 +143,16 @@ src-tauri/     Rust shell: SQL plugin registration + credential commands
 
 Migrations are plain SQL in ascending version order and are applied at startup.
 
+`bets.import_ref` holds the fingerprint of the statement row a bet came from and
+is unique when set, which is what makes re-importing a statement idempotent.
+Bets entered by hand leave it NULL, and the index is partial so any number of
+them can.
+
+Dates in a statement are read **day-first** (`03/04/2026` is 3 April), because
+that is how Australian bookmakers write them. When both parts could be a month
+the Import screen says which reading it used and offers the other one — a date
+silently read the wrong way round would move bets by months.
+
 ## Security and privacy
 
 - No secrets are committed.
@@ -202,7 +219,6 @@ When you bump the version, update it in all three places: `package.json`,
 
 ## Roadmap
 
-- CSV import from bookmaker statements
 - Enriching events from free-tier odds/form APIs (The Odds API, FormFav)
 - General gambling tracking (pokies/table sessions)
 

@@ -12,6 +12,17 @@ export interface Database {
     params?: readonly unknown[],
   ): Promise<T[]>;
   close(): Promise<void>;
+  /**
+   * Run several statements as one unit, if the adapter can promise that.
+   *
+   * Optional because that promise is not free: `BEGIN`/`COMMIT` is only sound
+   * on a single connection, and `tauri-plugin-sql` hands out pooled ones, so the
+   * packaged adapter leaves this out rather than risk a transaction that opens
+   * on one connection and commits on another. Callers must therefore be
+   * idempotent (see `Repo.importBets`), so a batch interrupted half way can
+   * simply be run again.
+   */
+  transaction?<T>(run: () => Promise<T>): Promise<T>;
 }
 
 /**

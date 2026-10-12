@@ -61,6 +61,8 @@ function betView(overrides: Partial<BetView> = {}): BetView {
     sport_slug: null,
     sport_kind: null,
     promo_value_cents: 0,
+    // Entered by hand, so there is no statement row behind it.
+    import_ref: null,
     ...overrides,
   };
 }

@@ -49,6 +49,12 @@ export interface BetRow {
   settled_at: string | null;
   notes: string;
   created_at: string;
+  /**
+   * Fingerprint of the statement row this bet came from, or null for a bet
+   * entered by hand. Unique when set, which is what makes re-importing a
+   * statement a no-op instead of a doubling.
+   */
+  import_ref: string | null;
 }
 
 /**

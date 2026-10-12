@@ -8,6 +8,10 @@ import type { Database as Adapter } from "./database";
 export async function openTauriDatabase(): Promise<Adapter> {
   const db = await Database.load("sqlite:bet-tracker.db");
 
+  // Deliberately no `transaction`: the plugin executes against a connection
+  // pool, so a BEGIN and a later COMMIT need not land on the same connection
+  // and the app could report a rollback it never performed. Bulk work is made
+  // re-runnable instead — an interrupted import can simply be run again.
   return {
     async execute(sql, params = []) {
       await db.execute(sql, params as unknown[]);

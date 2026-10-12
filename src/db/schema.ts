@@ -177,6 +177,19 @@ UPDATE promos SET type = 'profit_boost' WHERE type = 'odds_boost';
 UPDATE bets SET bet_class = 'odds_boost' WHERE bet_class = 'profit_boost';
 `,
   },
+  {
+    version: 6,
+    // A bet imported from a statement carries the fingerprint of the row it
+    // came from, which is what stops a re-imported statement from doubling
+    // every bet. Partial index (WHERE import_ref IS NOT NULL) because bets
+    // entered by hand have no reference and any number of NULLs must be
+    // allowed.
+    sql: `
+ALTER TABLE bets ADD COLUMN import_ref TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_import_ref
+  ON bets(import_ref) WHERE import_ref IS NOT NULL;
+`,
+  },
 ];
 
 export const DEFAULT_SETTINGS: Record<string, string> = {

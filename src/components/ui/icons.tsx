@@ -17,6 +17,7 @@ export type IconName =
   | "books"
   | "sports"
   | "settings"
+  | "import"
   | "system"
   | "dark"
   | "light";
@@ -81,6 +82,13 @@ const PATHS: Record<IconName, ReactNode> = {
       <circle cx="16" cy="6" r="2" />
       <circle cx="10" cy="12" r="2" />
       <circle cx="18" cy="18" r="2" />
+    </>
+  ),
+  import: (
+    <>
+      <path d="M12 3v10" />
+      <path d="M8 9.5L12 13.5l4-4" />
+      <path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3" />
     </>
   ),
   system: (

@@ -40,6 +40,23 @@ export async function createMemoryDatabase(): Promise<Database> {
         stmt.free();
       }
     },
+    async transaction<T>(run: () => Promise<T>): Promise<T> {
+      // A real transaction, so a test can prove that a batch which fails part
+      // way through leaves the database as it was.
+      db.run("BEGIN");
+      try {
+        const result = await run();
+        db.run("COMMIT");
+        return result;
+      } catch (error) {
+        try {
+          db.run("ROLLBACK");
+        } catch {
+          // Nothing to roll back.
+        }
+        throw error;
+      }
+    },
     async close() {
       db.close();
     },
