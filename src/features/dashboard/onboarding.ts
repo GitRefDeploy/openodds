@@ -10,6 +10,19 @@
  * Kept out of `domain/`: this is screen furniture, not betting arithmetic.
  */
 
+/**
+ * Settings key for whether the checklist has been hidden. Named once so the
+ * dashboard and the control that brings it back cannot disagree about it.
+ */
+export const ONBOARDING_DISMISSED_KEY = "onboardingDismissed";
+
+/** Hidden exactly when the preference says so, and absent means visible. */
+export function isChecklistHidden(
+  settings: Record<string, string>,
+): boolean {
+  return settings[ONBOARDING_DISMISSED_KEY] === "true";
+}
+
 export type OnboardingTarget = "bets" | "books" | "bankroll" | "promos";
 
 export interface OnboardingStep {

@@ -16,7 +16,9 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
   exist first (a bookmaker, a bet, a deposit, an offer) and ticks each one when
   the app can *see* it, not when you say so. There are no sample or demo rows:
   invented numbers on a profit-and-loss screen are worse than an empty one. Hide
-  the checklist once you have outgrown it, and it stays hidden.
+  the checklist once you have outgrown it, and it stays hidden — with a switch in
+  Settings → Preferences to bring it back, because hiding something should not be
+  a one-way door.
 - **Bets** - Single, multi and same-game-multi, each tagged with a **bet type**
   (Normal, Low-Hold, Arbitrage, Middle, Positive EV, Future, Sharp Money, No
   Sweat Bet, Qualifying Bet, Site Credit, Bonus Bet, Odds Boost) so bets can

@@ -17,6 +17,10 @@ import {
   secretStorageKind,
 } from "@/config/secrets";
 import type { OddsFormat } from "@/domain/odds";
+import {
+  ONBOARDING_DISMISSED_KEY,
+  isChecklistHidden,
+} from "@/features/dashboard/onboarding";
 import { ThemeToggle } from "@/app/ThemeProvider";
 import { AppVersion } from "@/components/ui/AppVersion";
 import { getAppInfo } from "@/config/appInfo";
@@ -77,6 +81,27 @@ export function SettingsPage() {
               hint="System follows your operating system, including when it changes while the app is open."
             >
               <ThemeToggle className="max-w-sm" />
+            </Field>
+          </div>
+          <div className="mt-4">
+            <Field
+              label="Setup checklist"
+              hint="The dashboard only shows it while something is still missing, so hiding it loses nothing."
+            >
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  className="accent-[var(--accent)]"
+                  checked={!isChecklistHidden(settings)}
+                  onChange={(event) =>
+                    void saveSetting(
+                      ONBOARDING_DISMISSED_KEY,
+                      event.target.checked ? "false" : "true",
+                    )
+                  }
+                />
+                Show the checklist on the dashboard
+              </label>
             </Field>
           </div>
           <p className="mt-3 text-xs text-faint">

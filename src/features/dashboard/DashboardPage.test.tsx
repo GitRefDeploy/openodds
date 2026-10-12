@@ -167,6 +167,14 @@ describe("the dashboard before anything is recorded", () => {
     render(<DashboardPage />);
     expect(screen.queryByText("Get set up")).toBeNull();
   });
+
+  it("comes back when Settings writes the preference off", () => {
+    // The other half of the same door: the value the restore control writes
+    // has to bring the checklist back, not just stop it being hidden.
+    mocks.data = appData({ settings: { onboardingDismissed: "false" } });
+    render(<DashboardPage />);
+    expect(screen.getByText("Get set up")).toBeTruthy();
+  });
 });
 
 describe("the dashboard once bets are settled", () => {

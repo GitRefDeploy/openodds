@@ -29,7 +29,12 @@ import {
   statsFor,
   type GroupTotal,
 } from "@/features/analytics/selectors";
-import { checklistProgress, type OnboardingTarget } from "./onboarding";
+import {
+  ONBOARDING_DISMISSED_KEY,
+  checklistProgress,
+  isChecklistHidden,
+  type OnboardingTarget,
+} from "./onboarding";
 
 type DashboardTarget = OnboardingTarget | "import";
 
@@ -82,8 +87,8 @@ export function DashboardPage({
 
   const hasSettled = stats.settledCount > 0;
   const pending = stats.count - stats.settledCount;
-  const dismissed = settings.onboardingDismissed === "true";
-  const showChecklist = !dismissed && checklist.remaining > 0;
+  // Nothing to plan once every step is done, hidden or not.
+  const showChecklist = !isChecklistHidden(settings) && checklist.remaining > 0;
 
   return (
     <>
@@ -100,7 +105,7 @@ export function DashboardPage({
         <ChecklistCard
           progress={checklist}
           onNavigate={onNavigate}
-          onDismiss={() => void saveSetting("onboardingDismissed", "true")}
+          onDismiss={() => void saveSetting(ONBOARDING_DISMISSED_KEY, "true")}
         />
       ) : null}
 

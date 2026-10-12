@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildChecklist, checklistProgress, type OnboardingInput } from "./onboarding";
+import {
+  ONBOARDING_DISMISSED_KEY,
+  buildChecklist,
+  checklistProgress,
+  isChecklistHidden,
+  type OnboardingInput,
+} from "./onboarding";
 
 const NOTHING: OnboardingInput = {
   bookCount: 0,
@@ -57,5 +63,25 @@ describe("the onboarding checklist", () => {
     expect(routes).toContain("bets");
     expect(routes).toContain("bankroll");
     expect(routes).toContain("promos");
+  });
+});
+
+describe("hiding the checklist", () => {
+  it("is shown on a fresh install", () => {
+    expect(isChecklistHidden({})).toBe(false);
+  });
+
+  it("is hidden only by the stored preference", () => {
+    expect(isChecklistHidden({ [ONBOARDING_DISMISSED_KEY]: "true" })).toBe(true);
+    // Anything else means "not hidden" — including the value the restore
+    // control writes, so showing it again works without a delete.
+    expect(isChecklistHidden({ [ONBOARDING_DISMISSED_KEY]: "false" })).toBe(false);
+    expect(isChecklistHidden({ otherSetting: "true" })).toBe(false);
+  });
+
+  it("names the key the dashboard and settings both write", () => {
+    // Renaming the constant without a migration would silently un-hide the
+    // checklist for everyone who had hidden it.
+    expect(ONBOARDING_DISMISSED_KEY).toBe("onboardingDismissed");
   });
 });
