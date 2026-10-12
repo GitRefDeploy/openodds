@@ -19,6 +19,13 @@ export async function openTauriDatabase(): Promise<Adapter> {
     async select<T>(sql: string, params: readonly unknown[] = []) {
       return (await db.select<T[]>(sql, params as unknown[])) as T[];
     },
+    async insert(sql, params = []) {
+      // RETURNING rather than last_insert_rowid(): the pool means the rowid
+      // could otherwise be read from a different connection than the insert ran
+      // on, and the id would come back as 0.
+      const rows = await db.select<{ id: number }[]>(`${sql} RETURNING id`, params as unknown[]);
+      return rows[0].id;
+    },
     async close() {
       await db.close();
     },

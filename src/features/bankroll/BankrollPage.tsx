@@ -28,7 +28,12 @@ import {
   TRANSACTION_TYPES,
   type TransactionType,
 } from "@/domain/bankroll";
-import { formatMoney, toCents, toMajor } from "@/domain/money";
+import {
+  formatMoney,
+  formatSignedMoney,
+  toCents,
+  toMajor,
+} from "@/domain/money";
 import { enrichAll } from "@/features/analytics/selectors";
 import { formatDate, todayISO } from "@/lib/utils";
 
@@ -231,7 +236,7 @@ export function BankrollPage() {
                         (signed >= 0 ? "text-positive" : "text-negative")
                       }
                     >
-                      {formatMoney(signed, currency, { signed: true })}
+                      {formatSignedMoney(signed, currency)}
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <Button

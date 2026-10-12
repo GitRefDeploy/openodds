@@ -1,8 +1,9 @@
 # Bet Tracker
 
 A local, open-source desktop app for tracking **betting profit and loss,
-promotional offers and bankroll**. Everythings stored in a SQLite file on your
-machine, there is no server, no account, no sync (potentially between devices in the future) and no telemetry.
+promotional offers and bankroll**. Everything is stored in a SQLite file on your
+machine: no server, no account, no telemetry. There is no sync between devices
+today, though the data model leaves room for it.
 
 Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 
@@ -25,6 +26,18 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
   be grouped and compared later. Decimal, fractional or American odds entry;
   win/loss/void/cashout/half-win/half-loss settlement, and an optional closing
   price (CLV) per bet.
+- **The record reads like a record** - Bets and positions are presented the way a
+  record is read, not as a form. A strip of totals across the top describes the
+  rows you are actually looking at — filter to one bookmaker and the turnover,
+  ROI and strike rate follow the filter rather than reporting the whole database.
+  Below it, four columns of mostly-repeated text (book, sport, format, promo)
+  fold into one muted line under the bet, and a **Compact / Comfortable** control
+  chooses how much of it stays: Compact is genuinely one line per bet, with the
+  closing-line edge inline beside the price, and Comfortable opens the metadata
+  and what a pending bet pays. Figures are right-aligned and line up by digit,
+  the outcome is a coloured row edge and a word instead of a badge in every row,
+  and a closing-line edge appears **only where a closing price exists** —
+  "no close", repeated down every row of an imported statement, is noise.
 - **Bonus bets are worth what they are actually worth** - A bonus bet is not
   your money and its stake is never returned, so a $25 bonus bet at 2.40 pays
   **$35** where $25 of cash would pay $60, and losing one costs nothing. Free
@@ -47,6 +60,11 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
 - **Positions** - Two or more bets that offset each other (an arbitrage, a
   middle, a bonus bet hedged against a qualifying bet) can be grouped, and the
   app reports the margin the group guarantees rather than two unrelated bets.
+  The Stats screen lists them with the leg that *sets* the guarantee marked as
+  the worst case, because an average across the legs would report a flattering
+  number that no leg actually pays. It shows the cash staked (free stakes
+  excluded), the guaranteed return and the locked margin, and keeps the
+  positions still running distinguishable from settled ones.
 - **CSV import from bookmaker statements** - Drop in the CSV a bookmaker exports
   and the app recognises the columns, saying what each one is being read as
   before anything is written. Rows it cannot read are **listed with their line
@@ -62,6 +80,23 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
   exchange those mean back and lay, which is a different question.
 - **Sports categorisation** - Thoroughbred, harness and greyhound racing, soccer, AFL,
   NRL, cricket, tennis and more to be added. Enable what you use, add your own.
+- **Market prices from a real bookmaker feed** (optional) — Add a free The Odds
+  API key and any bet's row gains a **Market** panel: pick a sport, pick the
+  event, and see what every AU book is showing for *h2h*, with your own price
+  compared against the market's. A price can then be recorded against the bet as
+  its closing price, which is how CLV can come from the feed rather than from
+  your memory. Two things are deliberate here. The prices are labelled as what
+  the books are showing **now** — the feed has no closing-line endpoint, and it
+  drops a market about fifteen minutes after the off, so a current price is not
+  dressed up as a closing one. And every price is stored as a **timestamped
+  observation** rather than as a number on the bet, so capturing the price at the
+  off later is a matter of writing the same row at a different moment.
+- **The free allowance is visible and accounted for** — `/sports` and `/events`
+  cost nothing; an odds request costs one credit per market per region, so a
+  single market across every Australian book is one credit out of the 500 the
+  free tier gives each month. Settings shows what the month has cost and what the
+  provider last reported as remaining, and nothing is fetched unless you press a
+  button that names its price first.
 - **Optional integrations** — Free & paid odds/form APIs are supported, but
   **entirely optional**. The app is fully usable with manual entry only.
 
@@ -123,12 +158,26 @@ On Windows this produces MSI and NSIS installers. On Linux, AppImage and `.deb`.
 ```bash
 npm test               # unit, database and UI tests (Vitest)
 npm run typecheck      # TypeScript
+npm run lint           # ESLint, also run in CI
 ```
 
 ## Architecture
 
 The guiding rule is **simple UI, pure domain core, adapters at the edges**. That
 keeps business logic testable and portable to another shell (e.g. mobile) later.
+
+Two rules in the data layer exist because they were broken once:
+
+- **A new row's id comes from its own statement.** Use `db.insert(...)`, which
+  appends `RETURNING id`, rather than an INSERT followed by
+  `SELECT last_insert_rowid()`. That pair reads connection-scoped state, and
+  both adapters break it: `sql.js` persists by calling `export()`, which resets
+  the rowid state between the two calls, and `tauri-plugin-sql` hands out pooled
+  connections, so the read can land on a different one. Either way the id comes
+  back as `0` and whatever links to it links to nothing.
+- **Nothing depends on transaction support.** It is optional on the `Database`
+  interface because pooled connections cannot promise that a `BEGIN` and a
+  `COMMIT` land together. Bulk work is written to be re-runnable instead.
 
 ```
 src/
@@ -230,7 +279,10 @@ When you bump the version, update it in all three places: `package.json`,
 
 ## Roadmap
 
-- Enriching events from free-tier odds/form APIs (The Odds API, FormFav)
+- FormFav for racing form and results (the free tier is form data; per-bookmaker
+  racing prices are a paid plan, so racing closing prices stay manual)
+- Capturing the market price at the off automatically, so a closing price can
+  come from the feed instead of being typed or picked
 - General gambling tracking (pokies/table sessions)
 
 ## License

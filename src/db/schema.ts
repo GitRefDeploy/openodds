@@ -190,6 +190,49 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_import_ref
   ON bets(import_ref) WHERE import_ref IS NOT NULL;
 `,
   },
+  {
+    version: 7,
+    // Quotes go with the bet they describe. The cascade above is documentation
+    // rather than machinery: SQLite defaults foreign keys off, which is why
+    // deleteBet unlinks them by hand.
+
+    // A market price is stored as an observation with the time it was seen,
+    // never as a number on a bet. That distinction is what keeps a later
+    // revision cheap: capturing the price at the off writes the same row shape
+    // at a different moment, so "the closing price" stays a question about
+    // which observation you mean rather than a second kind of record.
+    //
+    // bets.clv is deliberately untouched. It remains the effective closing
+    // price that the Bets and Stats screens already read, and a quote only
+    // populates it when the user says to.
+    sql: `
+CREATE TABLE IF NOT EXISTS market_quotes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  bet_id INTEGER REFERENCES bets(id) ON DELETE CASCADE,
+  source TEXT NOT NULL,
+  external_event_id TEXT,
+  sport_key TEXT,
+  event_name TEXT,
+  market_key TEXT NOT NULL DEFAULT 'h2h',
+  selection TEXT NOT NULL,
+  price REAL NOT NULL,
+  book_key TEXT,
+  book_name TEXT,
+  observed_at TEXT NOT NULL,
+  recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_market_quotes_bet ON market_quotes(bet_id);
+
+CREATE TABLE IF NOT EXISTS odds_api_calls (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  credits_used INTEGER NOT NULL DEFAULT 0,
+  credits_remaining INTEGER,
+  called_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`,
+  },
 ];
 
 export const DEFAULT_SETTINGS: Record<string, string> = {

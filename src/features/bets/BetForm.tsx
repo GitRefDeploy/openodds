@@ -35,29 +35,66 @@ interface PromoDraft {
 }
 
 export function BetForm({
-  open,
   onClose,
   editing,
 }: {
-  open: boolean;
   onClose: () => void;
   editing: BetView | null;
 }) {
   const { repo, books, sports, promos, oddsFormat, currency, refresh } = useAppData();
 
-  const [bookId, setBookId] = useState(0);
-  const [sportId, setSportId] = useState<number | null>(null);
-  const [description, setDescription] = useState("");
-  const [betType, setBetType] = useState<BetType>("single");
-  const [betClass, setBetClass] = useState<BetClass>("normal");
-  const [stake, setStake] = useState("");
-  const [odds, setOdds] = useState("");
-  const [clv, setClv] = useState("");
-  const [status, setStatus] = useState<string>("pending");
-  const [returnAmount, setReturnAmount] = useState("");
-  const [placedAt, setPlacedAt] = useState(todayISO());
-  const [settledAt, setSettledAt] = useState("");
-  const [notes, setNotes] = useState("");
+  const activeSports = useMemo(
+    () => sports.filter((s) => s.enabled === 1),
+    [sports],
+  );
+
+  /**
+   * The form is mounted when it opens, and keyed to whatever it is editing, so
+   * every field starts from the bet in front of it.
+   *
+   * Seeding the fields from an effect meant two render passes on every open,
+   * plus another whenever the book list refreshed — and it re-ran on changes it
+   * had no business reacting to. What genuinely has to wait for a round trip is
+   * the legs and the promo links, which live in their own tables, so that is
+   * the only thing left in an effect below.
+   */
+  const [bookId, setBookId] = useState(
+    () => editing?.book_id ?? books[0]?.id ?? 0,
+  );
+  const [sportId, setSportId] = useState<number | null>(
+    () => editing?.sport_id ?? activeSports[0]?.id ?? null,
+  );
+  const [description, setDescription] = useState(
+    () => editing?.description ?? "",
+  );
+  const [betType, setBetType] = useState<BetType>(
+    () => editing?.bet_type ?? "single",
+  );
+  // Normalised on the way in: a bet stored before migration 5 still says
+  // `profit_boost`, and the select must show Odds Boost rather than nothing.
+  const [betClass, setBetClass] = useState<BetClass>(() =>
+    normaliseBetClass(editing?.bet_class ?? "normal"),
+  );
+  const [stake, setStake] = useState(() =>
+    editing ? (editing.stake_cents / 100).toFixed(2) : "",
+  );
+  const [odds, setOdds] = useState(() =>
+    editing ? formatOdds(editing.odds, "decimal") : "",
+  );
+  const [clv, setClv] = useState(() =>
+    editing?.clv ? formatOdds(editing.clv, "decimal") : "",
+  );
+  const [status, setStatus] = useState<string>(() => editing?.status ?? "pending");
+  const [returnAmount, setReturnAmount] = useState(() =>
+    editing?.return_cents ? (editing.return_cents / 100).toFixed(2) : "",
+  );
+  const [placedAt, setPlacedAt] = useState(() =>
+    (editing?.placed_at ?? todayISO()).slice(0, 10),
+  );
+  const [settledAt, setSettledAt] = useState(() =>
+    editing?.settled_at ? editing.settled_at.slice(0, 10) : "",
+  );
+  const [notes, setNotes] = useState(() => editing?.notes ?? "");
   const [legs, setLegs] = useState<LegDraft[]>([]);
   const [promoLinks, setPromoLinks] = useState<PromoDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,56 +103,16 @@ export function BetForm({
   // does not silently discard a choice like Arbitrage.
   const [classBeforeBonus, setClassBeforeBonus] = useState<BetClass>("normal");
 
-  const activeSports = useMemo(
-    () => sports.filter((s) => s.enabled === 1),
-    [sports],
-  );
-
   useEffect(() => {
-    if (!open) return;
-    setErrors({});
-    if (!editing) {
-      setBookId(books[0]?.id ?? 0);
-      setSportId(activeSports[0]?.id ?? null);
-      setDescription("");
-      setBetType("single");
-      setBetClass("normal");
-      setClassBeforeBonus("normal");
-      setStake("");
-      setOdds("");
-      setClv("");
-      setStatus("pending");
-      setReturnAmount("");
-      setPlacedAt(todayISO());
-      setSettledAt("");
-      setNotes("");
-      setLegs([]);
-      setPromoLinks([]);
-      return;
-    }
-    setBookId(editing.book_id);
-    setSportId(editing.sport_id);
-    setDescription(editing.description);
-    setBetType(editing.bet_type);
-    // Normalised on the way in: a bet stored before migration 5 still says
-    // `profit_boost`, and the select must show Odds Boost rather than nothing.
-    setBetClass(normaliseBetClass(editing.bet_class ?? "normal"));
-    setClassBeforeBonus("normal");
-    setStake((editing.stake_cents / 100).toFixed(2));
-    setOdds(formatOdds(editing.odds, "decimal"));
-    setClv(editing.clv ? formatOdds(editing.clv, "decimal") : "");
-    setStatus(editing.status);
-    setReturnAmount(
-      editing.return_cents ? (editing.return_cents / 100).toFixed(2) : "",
-    );
-    setPlacedAt((editing.placed_at ?? todayISO()).slice(0, 10));
-    setSettledAt(editing.settled_at ? editing.settled_at.slice(0, 10) : "");
-    setNotes(editing.notes);
+    if (!editing) return;
+    let cancelled = false;
     (async () => {
       const [legRows, promoRows] = await Promise.all([
         repo.listLegs(editing.id),
         repo.listBetPromos(editing.id),
       ]);
+      // The form can be closed or switched while this is in flight.
+      if (cancelled) return;
       setLegs(
         legRows.map((l) => ({
           selection: l.selection,
@@ -130,7 +127,10 @@ export function BetForm({
         })),
       );
     })();
-  }, [open, editing, books, activeSports, repo]);
+    return () => {
+      cancelled = true;
+    };
+  }, [editing, repo]);
 
   const isMulti = betType === "multi" || betType === "same_game_multi";
 
@@ -243,12 +243,7 @@ export function BetForm({
   }
 
   return (
-    <Modal
-      open={open}
-      wide
-      title={editing ? "Edit bet" : "New bet"}
-      onClose={onClose}
-    >
+    <Modal open wide title={editing ? "Edit bet" : "New bet"} onClose={onClose}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label="Bookmaker">
           <Select

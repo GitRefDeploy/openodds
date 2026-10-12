@@ -128,6 +128,44 @@ export interface NewLeg {
   odds: number;
 }
 
+/**
+ * A price for one selection, as it was seen at one moment.
+ *
+ * `observed_at` is when the price was true and `recorded_at` is when this app
+ * wrote it down. They differ for a fetched price (the provider saw it first) and
+ * are the same for one typed in by hand. Keeping them apart is what lets a
+ * later revision ask "what was the price at the off" without changing the shape
+ * of what is stored.
+ */
+export interface MarketQuote {
+  id: number;
+  bet_id: number | null;
+  source: string;
+  external_event_id: string | null;
+  sport_key: string | null;
+  event_name: string | null;
+  market_key: string;
+  selection: string;
+  price: number;
+  book_key: string | null;
+  book_name: string | null;
+  observed_at: string;
+  recorded_at: string;
+}
+
+/** Everything a quote needs except the id and when we wrote it. */
+export type NewMarketQuote = Omit<MarketQuote, "id" | "recorded_at">;
+
+/** One call to a data provider, so the free allowance is accounted for. */
+export interface OddsApiCall {
+  id: number;
+  source: string;
+  endpoint: string;
+  credits_used: number;
+  credits_remaining: number | null;
+  called_at: string;
+}
+
 export interface NewBet {
   bookId: number;
   sportId: number | null;

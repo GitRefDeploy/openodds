@@ -130,7 +130,7 @@ export function App() {
       <main className="flex-1 overflow-y-auto bg-canvas px-6 py-6">
         {route === "dashboard" && <DashboardPage onNavigate={setRoute} />}
         {route === "bets" && <BetsPage />}
-        {route === "stats" && <StatsPage />}
+        {route === "stats" && <StatsPage onNavigate={setRoute} />}
         {route === "promos" && <PromosPage />}
         {route === "bankroll" && <BankrollPage />}
         {route === "import" && <ImportPage onNavigate={setRoute} />}

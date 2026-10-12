@@ -40,6 +40,17 @@ export async function createMemoryDatabase(): Promise<Database> {
         stmt.free();
       }
     },
+    async insert(sql: string, params: readonly unknown[] = []) {
+      const q = toPositional(`${sql} RETURNING id`, params);
+      const stmt = db.prepare(q.sql);
+      try {
+        if (q.params.length) stmt.bind(q.params as never);
+        stmt.step();
+        return (stmt.getAsObject() as { id: number }).id;
+      } finally {
+        stmt.free();
+      }
+    },
     async transaction<T>(run: () => Promise<T>): Promise<T> {
       // A real transaction, so a test can prove that a batch which fails part
       // way through leaves the database as it was.

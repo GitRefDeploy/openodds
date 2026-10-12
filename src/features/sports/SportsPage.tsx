@@ -79,7 +79,7 @@ export function SportsPage() {
                         </div>
                         <p className="text-xs text-faint">
                           {s
-                            ? `${s.count} bets · ${
+                            ? `${s.count} ${s.count === 1 ? "bet" : "bets"} · ${
                                 s.profitCents >= 0 ? "+" : ""
                               }${(s.profitCents / 100).toFixed(2)} ${currency}`
                             : "No settled bets"}

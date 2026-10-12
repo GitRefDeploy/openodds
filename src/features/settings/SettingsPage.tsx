@@ -402,7 +402,53 @@ function IntegrationRow({
       >
         Get a key →
       </a>
+      <ApiUsageReadout source={integration.name} />
     </div>
+  );
+}
+
+/**
+ * What the free allowance has cost so far.
+ *
+ * It sits under the key it belongs to, because the figure that matters when you
+ * are deciding whether to press a button that spends a credit is how much of the
+ * month is left. The counts are what the provider reported back, not what the
+ * app expected to spend. Nothing is shown until something has been called.
+ */
+function ApiUsageReadout({ source }: { source: string }) {
+  const { repo } = useAppData();
+  const [usage, setUsage] = useState<{
+    calls: number;
+    credits: number;
+    remaining: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    repo
+      .apiUsageThisMonth(source)
+      .then((next) => {
+        if (!cancelled) setUsage(next);
+      })
+      .catch(() => {
+        // A missing ledger is not worth an error on a settings screen.
+        if (!cancelled) setUsage(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, source]);
+
+  if (!usage || usage.calls === 0) return null;
+
+  return (
+    <p className="mt-2 text-xs text-faint">
+      {usage.calls} {usage.calls === 1 ? "call" : "calls"} this month ·{" "}
+      {usage.credits} {usage.credits === 1 ? "credit" : "credits"} spent ·{" "}
+      {usage.remaining === null
+        ? "allowance not reported"
+        : `${usage.remaining} left`}
+    </p>
   );
 }
 

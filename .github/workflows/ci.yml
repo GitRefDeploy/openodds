@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Tests and typecheck
+    name: Tests, typecheck and lint
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -39,6 +39,11 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      # The compiler cannot see a stale dependency array or a hook called
+      # conditionally, so without this step those only surface in review.
+      - name: Lint
+        run: npm run lint
 
       - name: Build frontend
         run: npm run build

@@ -6,7 +6,10 @@ import type {
   BetView,
   Book,
   BookKind,
+  MarketQuote,
   NewBet,
+  NewMarketQuote,
+  OddsApiCall,
   Promo,
   Sport,
   Transaction,
@@ -232,7 +235,7 @@ export class Repo {
   private async writeBet(betId: number | null, input: NewBet): Promise<number> {
     let id = betId ?? 0;
     if (betId === null) {
-      await this.db.execute(
+      id = await this.db.insert(
         `INSERT INTO bets
            (book_id, sport_id, description, bet_type, bet_class, clv,
             stake_cents, odds, status, return_cents, placed_at, settled_at,
@@ -254,10 +257,6 @@ export class Repo {
           input.notes,
         ],
       );
-      const rows = await this.db.select<{ id: number }>(
-        `SELECT last_insert_rowid() AS id`,
-      );
-      id = rows[0].id;
     } else {
       await this.db.execute(
         `UPDATE bets SET book_id = $1, sport_id = $2, description = $3,
@@ -315,7 +314,127 @@ export class Repo {
   async deleteBet(id: number): Promise<void> {
     await this.db.execute(`DELETE FROM bet_legs WHERE bet_id = $1`, [id]);
     await this.db.execute(`DELETE FROM bet_promos WHERE bet_id = $1`, [id]);
+    // SQLite defaults foreign keys off, so the cascade declared on market_quotes
+    // does not fire on its own: the quotes have to go with the bet explicitly,
+    // or they linger with nothing to belong to.
+    await this.db.execute(`DELETE FROM market_quotes WHERE bet_id = $1`, [id]);
     await this.db.execute(`DELETE FROM bets WHERE id = $1`, [id]);
+  }
+
+  // ------------------------------------------------------------ market quotes
+  async recordQuote(quote: NewMarketQuote): Promise<number> {
+    return this.db.insert(
+      `INSERT INTO market_quotes
+         (bet_id, source, external_event_id, sport_key, event_name, market_key,
+          selection, price, book_key, book_name, observed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        quote.bet_id,
+        quote.source,
+        quote.external_event_id,
+        quote.sport_key,
+        quote.event_name,
+        quote.market_key,
+        quote.selection,
+        quote.price,
+        quote.book_key,
+        quote.book_name,
+        quote.observed_at,
+      ],
+    );
+  }
+
+  /** Newest first, because the recent prices are the ones worth looking at. */
+  async quotesForBet(betId: number): Promise<MarketQuote[]> {
+    return this.db.select<MarketQuote>(
+      `SELECT * FROM market_quotes WHERE bet_id = $1
+       ORDER BY observed_at DESC, id DESC`,
+      [betId],
+    );
+  }
+
+  /**
+   * Make one observation the bet's closing price.
+   *
+   * `bets.clv` stays the effective figure that the Bets and Stats screens
+   * already read, so the CLV maths is untouched; the quote is the provenance
+   * behind it. Refuses a quote that belongs to no bet rather than quietly doing
+   * nothing, since that would look like it had been recorded.
+   */
+  async adoptQuoteAsClosingPrice(quoteId: number): Promise<void> {
+    const rows = await this.db.select<MarketQuote>(
+      `SELECT * FROM market_quotes WHERE id = $1`,
+      [quoteId],
+    );
+    const quote = rows[0];
+    if (!quote) throw new Error(`No market quote ${quoteId}`);
+    if (quote.bet_id === null) {
+      throw new Error(`Market quote ${quoteId} is not linked to a bet`);
+    }
+    await this.db.execute(`UPDATE bets SET clv = $1 WHERE id = $2`, [
+      quote.price,
+      quote.bet_id,
+    ]);
+  }
+
+  // --------------------------------------------------------------- api ledger
+  /**
+   * Account for one call to a data provider.
+   *
+   * The credit figures are what the provider reported, not what we worked out
+   * in advance, so the ledger cannot disagree with the account it is describing.
+   */
+  async recordApiCall(call: {
+    source: string;
+    endpoint: string;
+    creditsUsed: number;
+    creditsRemaining: number | null;
+  }): Promise<void> {
+    await this.db.execute(
+      `INSERT INTO odds_api_calls
+         (source, endpoint, credits_used, credits_remaining)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        call.source,
+        call.endpoint,
+        call.creditsUsed,
+        call.creditsRemaining,
+      ],
+    );
+  }
+
+  async recentApiCalls(source: string, limit = 10): Promise<OddsApiCall[]> {
+    return this.db.select<OddsApiCall>(
+      `SELECT * FROM odds_api_calls WHERE source = $1 ORDER BY id DESC LIMIT $2`,
+      [source, limit],
+    );
+  }
+
+  /**
+   * What this calendar month has cost, and the last figure the provider gave
+   * for what is left. `remaining` is null until a call has reported one.
+   */
+  async apiUsageThisMonth(source: string): Promise<{
+    calls: number;
+    credits: number;
+    remaining: number | null;
+  }> {
+    const rows = await this.db.select<{
+      calls: number;
+      credits: number;
+      remaining: number | null;
+    }>(
+      `SELECT COUNT(*) AS calls,
+              COALESCE(SUM(credits_used), 0) AS credits,
+              (SELECT credits_remaining FROM odds_api_calls
+                WHERE source = $1 AND credits_remaining IS NOT NULL
+                ORDER BY id DESC LIMIT 1) AS remaining
+         FROM odds_api_calls
+        WHERE source = $1
+          AND strftime('%Y-%m', called_at) = strftime('%Y-%m', 'now')`,
+      [source],
+    );
+    return rows[0] ?? { calls: 0, credits: 0, remaining: null };
   }
 
   // ------------------------------------------------------------------ import
@@ -341,14 +460,11 @@ export class Repo {
     );
     if (existing[0]) return { id: existing[0].id, created: false };
 
-    await this.db.execute(`INSERT INTO books (name, currency) VALUES ($1, $2)`, [
-      trimmed,
-      currency,
-    ]);
-    const rows = await this.db.select<{ id: number }>(
-      `SELECT last_insert_rowid() AS id`,
+    const id = await this.db.insert(
+      `INSERT INTO books (name, currency) VALUES ($1, $2)`,
+      [trimmed, currency],
     );
-    return { id: rows[0].id, created: true };
+    return { id, created: true };
   }
 
   /** Every fingerprint already imported, for previewing an import. */

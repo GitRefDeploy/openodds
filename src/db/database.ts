@@ -11,6 +11,20 @@ export interface Database {
     sql: string,
     params?: readonly unknown[],
   ): Promise<T[]>;
+  /**
+   * Run an INSERT and return the id of the row it wrote.
+   *
+   * One statement, using `RETURNING id`, rather than an INSERT followed by
+   * `SELECT last_insert_rowid()`. That pair reads connection-scoped state, and
+   * both of this app's adapters break it: the sql.js one calls `export()` to
+   * persist, which resets the rowid state between the two calls — so the read
+   * returns 0 and the caller links its child rows to nothing — and
+   * `tauri-plugin-sql` hands out pooled connections, so the second call can land
+   * on a different connection from the first.
+   *
+   * `sql` must be an INSERT without a RETURNING clause of its own.
+   */
+  insert(sql: string, params?: readonly unknown[]): Promise<number>;
   close(): Promise<void>;
   /**
    * Run several statements as one unit, if the adapter can promise that.

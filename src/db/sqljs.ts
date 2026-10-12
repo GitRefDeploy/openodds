@@ -75,6 +75,14 @@ export async function openSqlJsDatabase(): Promise<Database> {
       const q = toPositional(sql, params);
       return toRows<T>(db, q.sql, q.params);
     },
+    async insert(sql, params = []) {
+      const q = toPositional(`${sql} RETURNING id`, params);
+      const rows = toRows<{ id: number }>(db, q.sql, q.params);
+      // `select` deliberately does not persist, so a write does that itself —
+      // and it is safe to do so here only because the id has already been read.
+      if (!batching) persist(db);
+      return rows[0].id;
+    },
     async transaction<T>(run: () => Promise<T>): Promise<T> {
       // Nested calls join the outer transaction rather than issuing a second
       // BEGIN, which SQLite rejects.

@@ -19,7 +19,7 @@ import {
   PageHeader,
   Stat,
 } from "@/components/ui/primitives";
-import { formatMoney, toMajor } from "@/domain/money";
+import { formatMoney, formatSignedMoney, toMajor } from "@/domain/money";
 import {
   byBook,
   bySport,
@@ -82,8 +82,7 @@ export function DashboardPage({
   const money = (cents: number) => formatMoney(cents, currency);
   // A zero profit is not "+$0.00": the sign belongs on a gain or a loss, and
   // the empty dashboard is exactly where there are no gains yet.
-  const signed = (cents: number) =>
-    cents === 0 ? money(0) : formatMoney(cents, currency, { signed: true });
+  const signed = (cents: number) => formatSignedMoney(cents, currency);
 
   const hasSettled = stats.settledCount > 0;
   const pending = stats.count - stats.settledCount;
@@ -427,9 +426,7 @@ function BreakdownChart({
                 fontSize: 12,
               }}
               formatter={(value: number) => [
-                formatMoney(Math.round(value * 100), currency, {
-                  signed: true,
-                }),
+                formatSignedMoney(Math.round(value * 100), currency),
                 "Profit",
               ]}
             />

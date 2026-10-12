@@ -87,6 +87,92 @@ export function KpiTile({
   );
 }
 
+/**
+ * The strip of figures that belongs above a table.
+ *
+ * Hairline dividers rather than cards and gaps: this sits directly on top of a
+ * dense table and reviewing a record means reading it several times a session,
+ * so it has to be legible as a row of numbers you glance along rather than as
+ * four separate objects to look at.
+ */
+export function SummaryStrip({
+  className,
+  children,
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "grid gap-px overflow-hidden rounded-xl border border-line bg-line",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function SummaryCell({
+  label,
+  value,
+  sub,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "neutral" | "positive" | "negative";
+}) {
+  return (
+    <div className="min-w-0 bg-panel px-3.5 py-2.5">
+      <span className="block text-[11px] font-medium tracking-wide text-faint uppercase">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "mt-1 block text-lg leading-none font-semibold tabular-nums",
+          tone === "neutral" && "text-ink",
+          tone === "positive" && "text-positive",
+          tone === "negative" && "text-negative",
+        )}
+      >
+        {value}
+      </span>
+      {sub ? (
+        <span className="mt-1 block truncate text-xs text-faint">{sub}</span>
+      ) : null}
+    </div>
+  );
+}
+
+/** One muted metadata line under a table row's main text. */
+export function MetaLine({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-faint",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** A middot between metadata items, so the line reads as one sentence. */
+export function Dot() {
+  return (
+    <span aria-hidden="true" className="text-line">
+      ·
+    </span>
+  );
+}
+
 export function Input({
   className,
   ...props

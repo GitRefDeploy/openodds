@@ -392,3 +392,54 @@ describe("the import fingerprint", () => {
     ).rejects.toThrow();
   });
 });
+describe("market quotes", () => {
+  it("adds the quote and ledger tables to an existing database", async () => {
+    const db = await openAt(6);
+
+    await migrate(db);
+
+    expect(await columnsOf(db, "market_quotes")).toEqual([
+      "id",
+      "bet_id",
+      "source",
+      "external_event_id",
+      "sport_key",
+      "event_name",
+      "market_key",
+      "selection",
+      "price",
+      "book_key",
+      "book_name",
+      "observed_at",
+      "recorded_at",
+    ]);
+    expect(await indexesOn(db, "market_quotes")).toContain(
+      "idx_market_quotes_bet",
+    );
+    expect(await columnsOf(db, "odds_api_calls")).toContain(
+      "credits_remaining",
+    );
+    expect(await appliedVersion(db)).toBe(LATEST);
+  });
+
+  it("leaves the bets it already had exactly as they were", async () => {
+    // A quote is provenance. It is never a reason to touch a bet on upgrade,
+    // which is what keeps a closing price that was typed by hand intact.
+    const db = await openAt(6);
+    const bookId = await addBook(db, "Sportsbet");
+    const betId = await addLegacyBet(db, bookId, "Flemington R3", 5000);
+    const before = await betRow(db, betId);
+
+    await migrate(db);
+
+    expect(await betRow(db, betId)).toEqual(before);
+  });
+
+  it("can be run twice without complaint", async () => {
+    const db = await openAt(6);
+    await migrate(db);
+    await migrate(db);
+
+    expect(await appliedVersion(db)).toBe(LATEST);
+  });
+});

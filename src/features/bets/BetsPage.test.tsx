@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { AppData } from "@/app/DataProvider";
 import type { BetView, Book } from "@/db/types";
 import { BetsPage } from "./BetsPage";
@@ -101,10 +101,103 @@ function selectRow(index: number) {
   fireEvent.click(screen.getAllByLabelText("Select bet")[index]);
 }
 
+/**
+ * The figure shown in the summary cell with this label.
+ *
+ * Matched on the cell that carries a figure, because the page heading shares
+ * its word with one of the labels.
+ */
+function summaryValue(label: string): string {
+  const cell = screen
+    .getAllByText(label)
+    .map((node) => node.parentElement)
+    .find((parent) => parent?.querySelector("span.text-lg"));
+  return cell?.querySelector("span.text-lg")?.textContent ?? "";
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.refresh.mockResolvedValue(undefined);
   mocks.data = appData(ARB_LEGS);
+});
+
+describe("the density toggle", () => {
+  const density = (label: "Compact" | "Comfortable") =>
+    fireEvent.click(screen.getByRole("button", { name: label }));
+
+  it("starts compact, with the repeated detail folded away", () => {
+    render(<BetsPage />);
+
+    // Rows open one line each: the book and sport repeat down the column, so
+    // they are the first thing density gives up.
+    expect(within(screen.getByRole("table")).queryByText("Sportsbet")).toBeNull();
+  });
+
+  it("brings the book and sport back when asked for Comfortable", () => {
+    render(<BetsPage />);
+
+    density("Comfortable");
+    expect(
+      within(screen.getByRole("table")).getAllByText("Sportsbet"),
+    ).toHaveLength(ARB_LEGS.length);
+
+    density("Compact");
+    expect(within(screen.getByRole("table")).queryByText("Sportsbet")).toBeNull();
+  });
+
+  it("shows what a pending bet pays only at Comfortable", () => {
+    mocks.data = appData([betView({ id: 3, status: "pending", odds: 2.5 })]);
+    render(<BetsPage />);
+
+    // $100 on 2.50 pays $250. A dash alone says only that it has not settled.
+    expect(screen.queryByText(/pays/)).toBeNull();
+
+    density("Comfortable");
+    expect(screen.getByText("pays $250.00")).toBeTruthy();
+  });
+
+  it("keeps the closing-line edge in both densities", () => {
+    mocks.data = appData([betView({ id: 4, odds: 2.1, clv: 2.0 })]);
+    render(<BetsPage />);
+
+    // A figure the row is judged on, so density never hides it.
+    expect(screen.getByText("+5.0% CLV")).toBeTruthy();
+
+    density("Comfortable");
+    expect(screen.getByText("+5.0% CLV")).toBeTruthy();
+  });
+});
+
+describe("the table's hierarchy", () => {
+  /**
+   * jsdom applies no stylesheet, so the alignment is read off the class the
+   * column helper puts on the cell rather than from computed style — which is
+   * the thing that has to agree between the heading and the figures under it.
+   */
+  const alignment = (role: "columnheader" | "cell", name: string) => {
+    const table = screen.getByRole("table");
+    const nodes = within(table).getAllByRole(role);
+    const node = nodes.find((n) => n.textContent?.trim() === name);
+    return node?.className.includes("text-right") ? "right" : "left";
+  };
+
+  it("right-aligns each figure under a right-aligned heading", () => {
+    render(<BetsPage />);
+
+    for (const heading of ["Odds", "Stake", "Profit"]) {
+      expect(alignment("columnheader", heading)).toBe("right");
+    }
+    // The figures themselves, so a heading can never drift away from them.
+    expect(alignment("cell", "$100.00")).toBe("right");
+  });
+
+  it("leaves the reading order columns left-aligned", () => {
+    render(<BetsPage />);
+
+    for (const heading of ["Date", "Bet", "Status"]) {
+      expect(alignment("columnheader", heading)).toBe("left");
+    }
+  });
 });
 
 describe("grouping bets from the Bets page", () => {
@@ -155,13 +248,15 @@ describe("grouping bets from the Bets page", () => {
     render(<BetsPage />);
 
     // Both legs report the group's margin, not their own standalone profit.
-    expect(screen.getAllByText("2.86%")).toHaveLength(2);
+    expect(screen.getAllByText("Position 2.86%")).toHaveLength(2);
   });
 
   it("leaves an ungrouped bet out of any position", () => {
     render(<BetsPage />);
 
-    expect(screen.queryByText(/%$/)).toBeNull();
+    // Scoped to the position marker on purpose: the summary strip above the
+    // table has percentages of its own, and those are not a position.
+    expect(screen.queryByText(/^Position /)).toBeNull();
   });
 
   it("breaks the position up from one of its legs", async () => {
@@ -176,5 +271,70 @@ describe("grouping bets from the Bets page", () => {
     await waitFor(() => expect(mocks.clearPosition).toHaveBeenCalledWith(7));
     expect(mocks.refresh).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText("2 selected")).toBeNull());
+  });
+});
+
+describe("the betting record's summary", () => {
+  it("totals the rows on screen", () => {
+    render(<BetsPage />);
+
+    // 100.00 at 1.78 and 70.00 at 2.50: 170.00 staked, 183.00 of profit.
+    expect(summaryValue("Turnover")).toBe("$170.00");
+    expect(summaryValue("Net profit")).toBe("+$183.00");
+    expect(summaryValue("ROI")).toBe("107.6%");
+  });
+
+  it("follows the filter rather than describing the whole database", () => {
+    render(<BetsPage />);
+
+    fireEvent.change(screen.getByPlaceholderText("Search description…"), {
+      target: { value: "Leg A" },
+    });
+
+    expect(summaryValue("Bets")).toBe("1");
+    expect(screen.getByText("of 2 recorded")).toBeTruthy();
+    expect(summaryValue("Turnover")).toBe("$100.00");
+  });
+
+  it("says a rate has no value rather than zero when nothing settled", () => {
+    mocks.data = appData([
+      betView({ id: 1, status: "pending", return_cents: 0 }),
+    ]);
+    render(<BetsPage />);
+
+    expect(summaryValue("ROI")).toBe("—");
+    expect(screen.getByText("Needs a settled bet")).toBeTruthy();
+  });
+
+  it("shows how far ahead of the closing price each bet was taken", () => {
+    mocks.data = appData([
+      betView({ id: 1, odds: 2.4, clv: 2.3 }),
+      betView({ id: 2, odds: 2.2, clv: 2.3, description: "Behind" }),
+    ]);
+    render(<BetsPage />);
+
+    expect(screen.getByText("+4.3% CLV")).toBeTruthy();
+    expect(screen.getByText("-4.3% CLV")).toBeTruthy();
+  });
+
+  it("says nothing about the close when none was recorded", () => {
+    render(<BetsPage />);
+
+    // The fixtures record no CLV, which is the normal case for a fresh import.
+    // Repeating "no close" down every row would be noise, so the line simply
+    // is not there.
+    expect(screen.queryByText(/CLV$/)).toBeNull();
+  });
+
+  it("lets the reader choose how tightly the rows pack", () => {
+    render(<BetsPage />);
+
+    const compact = screen.getByRole("button", { name: "Compact" });
+    const comfortable = screen.getByRole("button", { name: "Comfortable" });
+    expect(compact.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(comfortable);
+    expect(comfortable.getAttribute("aria-pressed")).toBe("true");
+    expect(compact.getAttribute("aria-pressed")).toBe("false");
   });
 });

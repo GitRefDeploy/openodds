@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, multiplyCents, sumCents, toCents, toMajor } from "./money";
+import {
+  formatMoney,
+  formatSignedMoney,
+  multiplyCents,
+  sumCents,
+  toCents,
+  toMajor,
+} from "./money";
 
 describe("toCents", () => {
   it("parses decimal strings without float drift", () => {
@@ -47,5 +54,19 @@ describe("formatMoney", () => {
   it("can render a signed bare number", () => {
     const out = formatMoney(500, "AUD", { signed: true, showCurrency: false });
     expect(out).toBe("+5.00");
+  });
+});
+
+describe("formatSignedMoney", () => {
+  it("never signs a zero", () => {
+    // "+$0.00" reads as a small win. A break-even book, or a position whose
+    // legs have not settled, is not a win.
+    expect(formatSignedMoney(0, "AUD")).toBe(formatMoney(0, "AUD"));
+    expect(formatSignedMoney(0, "AUD")).not.toContain("+");
+  });
+
+  it("still signs a real gain or loss", () => {
+    expect(formatSignedMoney(7000, "AUD")).toContain("+$70.00");
+    expect(formatSignedMoney(-800, "AUD")).toContain("-$8.00");
   });
 });

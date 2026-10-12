@@ -9,7 +9,7 @@ export type Cents = number;
 export function toCents(value: number | string | null | undefined): Cents {
   if (value === null || value === undefined || value === "") return 0;
   const raw =
-    typeof value === "string" ? value.replace(/[^0-9.\-]/g, "") : String(value);
+    typeof value === "string" ? value.replace(/[^0-9.-]/g, "") : String(value);
   const num = Number(raw);
   if (!Number.isFinite(num)) return 0;
   return Math.round(num * 100);
@@ -35,6 +35,18 @@ export interface FormatMoneyOptions {
   signed?: boolean;
   /** Set false to render a bare number. Default true. */
   showCurrency?: boolean;
+}
+
+/**
+ * Format a gain or a loss, where the sign belongs on one and never on a zero.
+ *
+ * `+$0.00` reads as a small win rather than as nothing having happened, and a
+ * break-even book or a position whose legs have not settled yet is not a win.
+ * Every screen showing a profit-and-loss figure goes through here so the rule
+ * lives in one place rather than being re-derived per component.
+ */
+export function formatSignedMoney(cents: Cents, currency = "AUD"): string {
+  return formatMoney(cents, currency, cents === 0 ? {} : { signed: true });
 }
 
 export function formatMoney(

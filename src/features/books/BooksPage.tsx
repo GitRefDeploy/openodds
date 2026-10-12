@@ -13,7 +13,8 @@ import {
   PageHeader,
   Select,
 } from "@/components/ui/primitives";
-import { formatMoney } from "@/domain/money";
+import { formatSignedMoney } from "@/domain/money";
+import { cn } from "@/lib/utils";
 import { byBook, enrichAll } from "@/features/analytics/selectors";
 import { bookSchema, type BookForm } from "@/lib/validation";
 
@@ -78,6 +79,8 @@ export function BooksPage() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => {
             const s = statsFor(book.id);
+            const settledCount = s?.count ?? 0;
+            const profit = s?.profitCents ?? 0;
             return (
               <Card key={book.id} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -103,18 +106,20 @@ export function BooksPage() {
                 </p>
                 <div className="mt-auto flex items-center justify-between border-t border-line pt-2 text-xs">
                   <span className="text-muted">
-                    {s?.count ?? 0} settled bets
+                    {settledCount} settled {settledCount === 1 ? "bet" : "bets"}
                   </span>
                   <span
-                    className={
-                      (s?.profitCents ?? 0) >= 0
-                        ? "text-positive"
-                        : "text-negative"
-                    }
+                    className={cn(
+                      // A zero is not a gain, so it does not get a gain's
+                      // colour any more than it gets a sign.
+                      settledCount === 0 || profit === 0
+                        ? "text-muted"
+                        : profit > 0
+                          ? "text-positive"
+                          : "text-negative",
+                    )}
                   >
-                    {formatMoney(s?.profitCents ?? 0, currency, {
-                      signed: true,
-                    })}
+                    {formatSignedMoney(profit, currency)}
                   </span>
                 </div>
                 <div className="flex justify-end">
