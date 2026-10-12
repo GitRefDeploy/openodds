@@ -58,8 +58,14 @@ beforeEach(() => {
 });
 
 describe("the promo value field", () => {
-  it("starts on an odds boost and says the number is a share of the profit", async () => {
+  it("starts on a profit boost and says the number is a share of the profit", async () => {
     await openForm();
+
+    // The form opens on the profit boost, and names it as such: the default
+    // must not be a type name that no longer matches what the number means.
+    const type = screen.getByLabelText(/Type/) as HTMLSelectElement;
+    expect(type.value).toBe("profit_boost");
+    expect(type.options[type.selectedIndex].text).toBe("Profit boost");
 
     // Labelled by what it means, not by a bare "Value" that could be anything.
     expect(screen.getByLabelText(/Extra profit/)).toBeTruthy();
