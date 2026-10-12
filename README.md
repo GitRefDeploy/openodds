@@ -151,6 +151,19 @@ The release is created as a **draft**: review the assets, then publish it. The
 updater endpoint resolves `releases/latest`, which ignores drafts, so installed
 apps will not see a new version until you publish.
 
+**The repository has to be readable without credentials.** The manifest is
+fetched by an installed app, which has no GitHub account, and GitHub answers
+**404** for a private repository — indistinguishable, from the app's side, from a
+release that does not exist. An installed copy reports that as "the feed answered
+404". Settings → Updates has a **Test the feed** button that shows exactly what
+the app sees, and a field for a read-only token when the feed has to stay
+private.
+
+**The version has to go up.** The updater only installs a manifest whose version
+is greater than the running build, so a release that reuses an already-installed
+version is ignored — deliberately, and not reported as an error. Bump
+`package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` together.
+
 Two things are needed for releases:
 
 1. **The updater endpoint is already configured** to

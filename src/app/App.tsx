@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppData } from "./DataProvider";
+import { AppVersion } from "@/components/ui/AppVersion";
 import { cn } from "@/lib/utils";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { BetsPage } from "@/features/bets/BetsPage";
@@ -69,7 +70,7 @@ export function App() {
           ))}
         </nav>
         <div className="mt-auto px-4 py-4 text-xs text-slate-600">
-          v0.1.0
+          <AppVersion />
         </div>
       </aside>
 

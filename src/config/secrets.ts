@@ -4,18 +4,13 @@
  * Manager / Linux Secret Service) via a Tauri command. In the browser preview
  * there is no keychain, so we fall back to localStorage and the UI warns.
  */
+import { isTauriRuntime } from "./runtime";
+
 const SERVICE = "bet-tracker";
 const BROWSER_PREFIX = "bet-tracker.secret.";
 
-function inTauri(): boolean {
-  return (
-    typeof globalThis !== "undefined" &&
-    "__TAURI_INTERNALS__" in (globalThis as Record<string, unknown>)
-  );
-}
-
 export function secretStorageKind(): "keychain" | "browser" {
-  return inTauri() ? "keychain" : "browser";
+  return isTauriRuntime() ? "keychain" : "browser";
 }
 
 async function invoke<T>(cmd: string, args: Record<string, unknown>): Promise<T> {
@@ -24,7 +19,7 @@ async function invoke<T>(cmd: string, args: Record<string, unknown>): Promise<T>
 }
 
 export async function saveSecret(name: string, value: string): Promise<void> {
-  if (inTauri()) {
+  if (isTauriRuntime()) {
     await invoke("save_secret", { service: SERVICE, account: name, value });
     return;
   }
@@ -32,14 +27,14 @@ export async function saveSecret(name: string, value: string): Promise<void> {
 }
 
 export async function getSecret(name: string): Promise<string | null> {
-  if (inTauri()) {
+  if (isTauriRuntime()) {
     return invoke<string | null>("get_secret", { service: SERVICE, account: name });
   }
   return globalThis.localStorage?.getItem(BROWSER_PREFIX + name) ?? null;
 }
 
 export async function deleteSecret(name: string): Promise<void> {
-  if (inTauri()) {
+  if (isTauriRuntime()) {
     await invoke("delete_secret", { service: SERVICE, account: name });
     return;
   }

@@ -3,12 +3,19 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath, URL } from "node:url";
+import pkg from "./package.json";
 
 // Tauri expects a fixed dev port and must not clear the screen.
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // The app's version, from the one file that declares it. The sidebar and the
+  // update card display it, and the updater compares manifests against it, so a
+  // hand-typed copy would be wrong in both places as soon as it changed.
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

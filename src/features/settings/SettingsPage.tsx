@@ -17,8 +17,13 @@ import {
   secretStorageKind,
 } from "@/config/secrets";
 import type { OddsFormat } from "@/domain/odds";
+import { AppVersion } from "@/components/ui/AppVersion";
+import { getAppInfo } from "@/config/appInfo";
 import {
+  UPDATE_FEED_TOKEN_KEY,
+  UPDATE_FEED_URL,
   checkAndInstallUpdate,
+  inspectUpdateFeed,
   type UpdateProgress,
 } from "@/config/updater";
 
@@ -95,9 +100,9 @@ export function SettingsPage() {
         <Card>
           <h2 className="mb-2 text-sm font-semibold text-slate-200">About</h2>
           <p className="text-sm text-slate-400">
-            Bet Tracker v0.1.0 · MIT licensed. Runs entirely on your machine —
-            there is no server, no account and no telemetry. All API keys are
-            optional and entered by you.
+            Bet Tracker <AppVersion /> · MIT licensed. Runs entirely on your
+            machine — there is no server, no account and no telemetry. All API
+            keys are optional and entered by you.
           </p>
         </Card>
       </div>
@@ -106,11 +111,18 @@ export function SettingsPage() {
 }
 
 function UpdatesCard() {
+  const [currentVersion, setCurrentVersion] = useState<string | null>(null);
   const [progress, setProgress] = useState<UpdateProgress | null>(null);
+  const [feedMessage, setFeedMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    getAppInfo().then((info) => setCurrentVersion(info.version));
+  }, []);
 
   const label = (() => {
-    if (!progress) return "You are running v0.1.0.";
+    if (!progress) return null;
     switch (progress.state) {
       case "checking":
         return "Checking for updates…";
@@ -133,20 +145,135 @@ function UpdatesCard() {
 
   return (
     <Card>
-      <h2 className="mb-2 text-sm font-semibold text-slate-200">Updates</h2>
-      <p className="mb-3 text-sm text-slate-400">{label}</p>
-      <Button
-        variant="default"
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          await checkAndInstallUpdate(setProgress);
-          setBusy(false);
-        }}
-      >
-        Check for updates
-      </Button>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-slate-200">Updates</h2>
+        <Badge tone="neutral">
+          {currentVersion ? `Running v${currentVersion}` : "Reading version…"}
+        </Badge>
+      </div>
+
+      <p className="text-sm text-slate-400">
+        Installed copies check the signed manifest below. That URL has to be
+        readable without credentials, so a repository that is private is enough
+        on its own to stop every update.
+      </p>
+      <p className="mt-1 text-xs break-all text-slate-500">{UPDATE_FEED_URL}</p>
+
+      {label ? (
+        <p
+          className={
+            "mt-3 text-sm " +
+            (progress?.state === "error" ? "text-rose-300" : "text-slate-300")
+          }
+        >
+          {label}
+        </p>
+      ) : null}
+
+      {feedMessage ? (
+        <p className="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-300">
+          {feedMessage}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          variant="default"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setFeedMessage(null);
+            await checkAndInstallUpdate(setProgress);
+            setBusy(false);
+          }}
+        >
+          Check for updates
+        </Button>
+        {/* Runs in the browser preview too, which is what makes it possible to
+            see the same answer the installed app would get. */}
+        <Button
+          variant="ghost"
+          disabled={testing || currentVersion === null}
+          onClick={async () => {
+            setTesting(true);
+            setFeedMessage(null);
+            const report = await inspectUpdateFeed(currentVersion ?? "0.0.0");
+            setFeedMessage(report.message);
+            setTesting(false);
+          }}
+        >
+          {testing ? "Testing…" : "Test the feed"}
+        </Button>
+      </div>
+
+      <FeedTokenRow />
     </Card>
+  );
+}
+
+/**
+ * A read-only token, for the case where the feed cannot be made public.
+ *
+ * Kept here rather than folded into the integrations list because it is not a
+ * data source: it exists only so the updater can prove it is allowed to read a
+ * manifest, and it is only ever sent when one has been stored.
+ */
+function FeedTokenRow() {
+  const [configured, setConfigured] = useState(false);
+  const [value, setValue] = useState("");
+
+  useEffect(() => {
+    hasSecret(UPDATE_FEED_TOKEN_KEY).then(setConfigured);
+  }, []);
+
+  return (
+    <div className="mt-4 rounded-lg border border-slate-800 p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-slate-200">
+          Private feed token
+        </p>
+        {configured ? (
+          <Badge tone="positive">Configured</Badge>
+        ) : (
+          <Badge tone="neutral">Not configured</Badge>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-slate-500">
+        Only needed if the release repository is not public. Public feeds need
+        no token, and none is sent unless one is stored here. Stored in the OS
+        keychain, never in the repository.
+      </p>
+      <div className="mt-2 flex gap-2">
+        <Input
+          type="password"
+          value={value}
+          placeholder={configured ? "••••••••" : "Paste a read-only token"}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <Button
+          variant="default"
+          disabled={!value.trim()}
+          onClick={async () => {
+            await saveSecret(UPDATE_FEED_TOKEN_KEY, value.trim());
+            setValue("");
+            setConfigured(true);
+          }}
+        >
+          Save
+        </Button>
+        {configured && (
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              await deleteSecret(UPDATE_FEED_TOKEN_KEY);
+              setConfigured(false);
+            }}
+          >
+            Remove
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 

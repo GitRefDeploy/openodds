@@ -1,6 +1,6 @@
 {
   "name": "bet-tracker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Local-first, open-source betting P/L, promo and bankroll tracker.",
   "license": "MIT",
