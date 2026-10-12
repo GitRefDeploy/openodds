@@ -8,7 +8,7 @@ import {
   PageHeader,
   Stat,
 } from "@/components/ui/primitives";
-import { BET_CLASS_LABELS } from "@/domain/betClass";
+import { betClassLabel, normaliseBetClass } from "@/domain/betClass";
 import { formatMoney } from "@/domain/money";
 import { formatOdds } from "@/domain/odds";
 import { BET_STATUS_LABELS, type BetStatus } from "@/domain/pnl";
@@ -37,8 +37,10 @@ const STATUS_TONE: Record<
  * name, so it says so rather than picking one arbitrarily.
  */
 function positionLabel(legs: readonly EnrichedBet[]): string {
-  const classes = new Set(legs.map((leg) => leg.bet_class));
-  return classes.size === 1 ? BET_CLASS_LABELS[legs[0].bet_class] : "Mixed legs";
+  // Normalised, so a single legacy spelling among the legs still counts as the
+  // legs agreeing rather than as a mixed position.
+  const classes = new Set(legs.map((leg) => normaliseBetClass(leg.bet_class)));
+  return classes.size === 1 ? betClassLabel(legs[0].bet_class) : "Mixed legs";
 }
 
 export function StatsPage() {

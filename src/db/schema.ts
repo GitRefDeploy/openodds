@@ -135,6 +135,48 @@ ALTER TABLE bets ADD COLUMN position_id INTEGER;
 CREATE INDEX IF NOT EXISTS idx_bets_position ON bets(position_id);
 `,
   },
+  {
+    version: 4,
+    // "Bonus bet" and "Free bet" used to exist as promo types as well as bet
+    // classes, so one bonus bet could be recorded both ways: its stake was
+    // excluded from the amount at risk *and* its value was credited again as
+    // promo value. The bet class owns that now, so fold the old promo rows back
+    // into the class they described and drop them.
+    sql: `
+UPDATE bets SET bet_class = 'bonus_bet'
+  WHERE bet_class NOT IN ('bonus_bet', 'site_credit')
+    AND id IN (
+      SELECT bp.bet_id FROM bet_promos bp
+      JOIN promos p ON p.id = bp.promo_id
+      WHERE p.type IN ('bonus_bet', 'free_bet')
+    );
+
+DELETE FROM bet_promos
+  WHERE promo_id IN (
+    SELECT id FROM promos WHERE type IN ('bonus_bet', 'free_bet')
+  );
+
+DELETE FROM promos WHERE type IN ('bonus_bet', 'free_bet');
+`,
+  },
+  {
+    version: 5,
+    // Two vocabularies had ended up with each other's names. The promo type
+    // measured a share of the *profit* a win would make but was called
+    // `odds_boost`; the bet class meant "taken at a genuinely boosted price"
+    // but was called `profit_boost`. So "30" on the promo read as a change in
+    // the odds, and "Profit Boost" on the bet read as a promo. They swap, one
+    // statement per table, so each word means one thing: a promo type of
+    // `profit_boost` is a share of profit, and a bet class of `odds_boost` is a
+    // bet whose price really moved.
+    //
+    // These are renames, not toggles — after the update no row holds the old
+    // value in that column — so running the migration twice cannot swap back.
+    sql: `
+UPDATE promos SET type = 'profit_boost' WHERE type = 'odds_boost';
+UPDATE bets SET bet_class = 'odds_boost' WHERE bet_class = 'profit_boost';
+`,
+  },
 ];
 
 export const DEFAULT_SETTINGS: Record<string, string> = {

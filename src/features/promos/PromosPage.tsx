@@ -14,8 +14,16 @@ import {
   Select,
   Textarea,
 } from "@/components/ui/primitives";
-import { formatMoney } from "@/domain/money";
-import { PROMO_TYPES, PROMO_TYPE_LABELS } from "@/domain/promo";
+import { formatMoney, toCents } from "@/domain/money";
+import {
+  PROMO_TYPES,
+  PROMO_TYPE_LABELS,
+  PROMO_VALUE_WORDING,
+  describePromoValue,
+  normalisePromoType,
+  promoTypeLabel,
+  type PromoType,
+} from "@/domain/promo";
 import { promoSchema, type PromoForm as PromoFormValues } from "@/lib/validation";
 
 interface Usage {
@@ -33,12 +41,13 @@ export function PromosPage() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<PromoFormValues>({
     resolver: zodResolver(promoSchema),
     defaultValues: {
       name: "",
-      type: "bonus_bet",
+      type: "profit_boost",
       valueType: "percent",
       value: "100",
       minOdds: "",
@@ -51,12 +60,25 @@ export function PromosPage() {
     repo.promoUsage().then(setUsage);
   }, [repo, promos]);
 
+  // The number field means something different for each kind of offer, so its
+  // label and hint follow the selected type instead of staying generic. A bare
+  // "Value" box is what let 30 be read as 30% of anything.
+  const selectedType = normalisePromoType(
+    (watch("type") ?? "profit_boost") as PromoType,
+  );
+  const valueWording = PROMO_VALUE_WORDING[selectedType];
+
   async function onSubmit(values: PromoFormValues) {
     await repo.createPromo({
       name: values.name.trim(),
       type: values.type as (typeof PROMO_TYPES)[number],
       valueType: values.valueType as "percent" | "fixed",
-      value: Number(values.value),
+      // A percentage is stored as entered; a fixed amount is typed in dollars
+      // and stored in cents like every other money value in the app.
+      value:
+        values.valueType === "fixed"
+          ? toCents(values.value)
+          : Number(values.value),
       minOdds: values.minOdds ? Number(values.minOdds) : 0,
       bookId: values.bookId ? Number(values.bookId) : null,
       notes: values.notes,
@@ -72,7 +94,7 @@ export function PromosPage() {
     <>
       <PageHeader
         title="Promos"
-        description="Bonus bets, odds boosts, cashback and other offers — tracked separately from organic profit."
+        description="Profit boosts, cashback, deposit matches and other offers — tracked separately from organic profit."
         actions={
           <Button variant="primary" onClick={() => setOpen(true)}>
             New promo
@@ -105,12 +127,17 @@ export function PromosPage() {
                         : "Any bookmaker"}
                     </p>
                   </div>
-                  <Badge tone="info">{PROMO_TYPE_LABELS[promo.type]}</Badge>
+                  <Badge tone="info">{promoTypeLabel(promo.type)}</Badge>
                 </div>
                 <p className="text-sm text-slate-300">
-                  {promo.value_type === "percent"
-                    ? `${promo.value}%`
-                    : formatMoney(promo.value, currency)}
+                  {describePromoValue(
+                    {
+                      type: promo.type,
+                      valueType: promo.value_type,
+                      value: promo.value,
+                    },
+                    (cents) => formatMoney(cents, currency),
+                  )}
                   {promo.min_odds > 0 && (
                     <span className="ml-2 text-xs text-slate-500">
                       min odds {promo.min_odds.toFixed(2)}
@@ -147,7 +174,7 @@ export function PromosPage() {
       <Modal open={open} title="New promo" onClose={() => setOpen(false)}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Field label="Name">
-            <Input {...register("name")} placeholder="e.g. 20% odds boost" />
+            <Input {...register("name")} placeholder="e.g. 30% profit boost" />
             {errors.name && <Error>{errors.name.message}</Error>}
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -160,14 +187,18 @@ export function PromosPage() {
                 ))}
               </Select>
             </Field>
-            <Field label="Value type">
+            <Field label="Value is">
               <Select {...register("valueType")}>
-                <option value="percent">Percent</option>
-                <option value="fixed">Fixed amount</option>
+                <option value="percent">A percentage</option>
+                <option value="fixed">A fixed amount</option>
               </Select>
             </Field>
-            <Field label="Value">
-              <Input {...register("value")} placeholder="100" />
+            <Field label={valueWording.label} hint={valueWording.hint}>
+              <Input
+                {...register("value")}
+                placeholder={valueWording.placeholder}
+                inputMode="decimal"
+              />
               {errors.value && <Error>{errors.value.message}</Error>}
             </Field>
             <Field label="Minimum odds">

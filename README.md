@@ -10,7 +10,7 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
 
 - **Bets** - Single, multi and same-game-multi, each tagged with a **bet type**
   (Normal, Low-Hold, Arbitrage, Middle, Positive EV, Future, Sharp Money, No
-  Sweat Bet, Qualifying Bet, Site Credit, Bonus Bet, Profit Boost) so bets can
+  Sweat Bet, Qualifying Bet, Site Credit, Bonus Bet, Odds Boost) so bets can
   be grouped and compared later. Decimal, fractional or American odds entry;
   win/loss/void/cashout/half-win/half-loss settlement, and an optional closing
   price (CLV) per bet.
@@ -18,9 +18,16 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
   your money and its stake is never returned, so a $25 bonus bet at 2.40 pays
   **$35** where $25 of cash would pay $60, and losing one costs nothing. Free
   stakes stay out of turnover and ROI while the profit they earn still counts.
-- **Promos** - Bonus bets, free bets, odds boosts, cashback and deposit matches.
-  Promo value is tracked **separately from organic profit**, so you can see how
-  much of your edge is promotional.
+- **Promos** - Profit boosts, cashback and deposit matches. Promo value is
+  tracked **separately from organic profit**, so you can see how much of your
+  edge is promotional. A promo never says who funded the stake — that is the bet
+  type's job — so a bonus bet cannot be recorded twice and counted twice. The
+  percentage always names its base: a **profit boost** is a share of the
+  **profit a win would make** (30 turns $100 of profit into $130, it does not
+  move the odds), while cashback and a deposit match are shares of the
+  **stake**. A price the bookmaker genuinely did move is not a promo at all —
+  that is the **Odds Boost** bet type, and the improved price belongs in the
+  bet's odds.
 - **Bankroll** - Deposits, withdrawals and adjustments, with a running balance
   and bankroll curve. Bet stakes and returns are derived from the bets table, so
   they are never double-counted.
@@ -90,7 +97,7 @@ On Windows this produces MSI and NSIS installers. On Linux, AppImage and `.deb`.
 ### Test
 
 ```bash
-npm test               # domain unit tests (Vitest)
+npm test               # unit, database and UI tests (Vitest)
 npm run typecheck      # TypeScript
 ```
 

@@ -12,6 +12,7 @@ import {
   BET_CLASS_GROUP_LABELS,
   BET_CLASS_LABELS,
   classesInGroup,
+  normaliseBetClass,
   traitsFor,
   type BetClass,
 } from "@/domain/betClass";
@@ -96,7 +97,9 @@ export function BetForm({
     setSportId(editing.sport_id);
     setDescription(editing.description);
     setBetType(editing.bet_type);
-    setBetClass(editing.bet_class ?? "normal");
+    // Normalised on the way in: a bet stored before migration 5 still says
+    // `profit_boost`, and the select must show Odds Boost rather than nothing.
+    setBetClass(normaliseBetClass(editing.bet_class ?? "normal"));
     setClassBeforeBonus("normal");
     setStake((editing.stake_cents / 100).toFixed(2));
     setOdds(formatOdds(editing.odds, "decimal"));

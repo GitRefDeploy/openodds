@@ -32,7 +32,9 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    // Node by default, which suits the domain and database tests. The few that
+    // need a DOM opt in with a `@vitest-environment jsdom` docblock.
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });

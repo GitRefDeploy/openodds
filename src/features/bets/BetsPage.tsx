@@ -18,11 +18,7 @@ import {
   PageHeader,
   Select,
 } from "@/components/ui/primitives";
-import {
-  BET_CLASS_LABELS,
-  groupOf,
-  type BetClass,
-} from "@/domain/betClass";
+import { betClassLabel, groupOf, type BetClass } from "@/domain/betClass";
 import { formatMoney } from "@/domain/money";
 import { formatOdds } from "@/domain/odds";
 import { BET_STATUS_LABELS, type BetStatus } from "@/domain/pnl";
@@ -188,7 +184,7 @@ export function BetsPage() {
         header: "Bet type",
         cell: (info) => (
           <Badge tone={classTone(info.getValue())}>
-            {BET_CLASS_LABELS[info.getValue()] ?? info.getValue()}
+            {betClassLabel(info.getValue())}
           </Badge>
         ),
       }),

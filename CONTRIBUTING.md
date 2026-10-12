@@ -39,6 +39,18 @@ Domain logic **must** be covered by unit tests in `src/domain/*.test.ts`. These
 are the contract for money and P/L correctness — a change to `computeProfitCents`
 without a test update will be rejected.
 
+Migrations and repository queries are covered in `src/db/*.test.ts`, which run
+against a **real in-memory SQLite** (`src/db/memoryDb.ts`) rather than a stub, so
+the SQL is genuinely executed. A new migration needs a test that upgrades a
+database from the previous version *with rows already in it* and shows those
+rows surviving.
+
+Behaviour that only exists in a screen — selection, wiring, what a table renders
+— is covered with a jsdom test: put `// @vitest-environment jsdom` on the first
+line and render the component with `@testing-library/react`. Keep these to the
+seam between the component and the domain; the maths itself belongs in
+`src/domain/`.
+
 The money rules a bet's class implies live in `src/domain/betClass.ts`: whether
 the stake was the punter's own cash, and whether a win gives it back. A bonus
 bet is neither, which is why it pays `stake x (odds - 1)` and why ROI must divide

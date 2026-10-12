@@ -5,7 +5,7 @@
  * These are a fixed vocabulary rather than something the user defines, because
  * the point of the field is to be *groupable* — the dashboard and stats pages
  * need every "Arbitrage" row to mean the same thing. Anything that varies per
- * offer (a specific odds boost percentage, a deposit match) belongs on a promo
+ * offer (a specific profit boost percentage, a deposit match) belongs on a promo
  * instead.
  */
 export type BetClass =
@@ -20,7 +20,7 @@ export type BetClass =
   | "qualifying"
   | "site_credit"
   | "bonus_bet"
-  | "profit_boost";
+  | "odds_boost";
 
 /**
  * Order matters: this is the order the dropdown presents them in, strategies
@@ -37,7 +37,7 @@ export const BET_CLASSES: readonly BetClass[] = [
   "qualifying",
   "site_credit",
   "bonus_bet",
-  "profit_boost",
+  "odds_boost",
   "sharp_money",
 ];
 
@@ -53,8 +53,28 @@ export const BET_CLASS_LABELS: Record<BetClass, string> = {
   qualifying: "Qualifying Bet",
   site_credit: "Site Credit",
   bonus_bet: "Bonus Bet",
-  profit_boost: "Profit Boost",
+  odds_boost: "Odds Boost",
 };
+
+/**
+ * Read a stored class back as one of the classes above.
+ *
+ * `profit_boost` was this class's name until migration 5, when it moved to the
+ * promo vocabulary; a stored value from before then still means a bet taken at
+ * a boosted price. An unrecognised value reads as an ordinary paid bet rather
+ * than leaking a raw key into the UI.
+ */
+export function normaliseBetClass(value: string): BetClass {
+  if (value === "profit_boost") return "odds_boost";
+  return (BET_CLASSES as readonly string[]).includes(value)
+    ? (value as BetClass)
+    : "normal";
+}
+
+/** Label for a stored class, never the raw key. */
+export function betClassLabel(value: string): string {
+  return BET_CLASS_LABELS[normaliseBetClass(value)];
+}
 
 export type BetClassGroup = "strategy" | "promo";
 
@@ -99,26 +119,36 @@ export const BET_CLASS_TRAITS: Record<BetClass, BetClassTraits> = {
   // at 2.40 pays $35, where $25 of real money would pay $60. This is the
   // behaviour the whole feature exists for.
   bonus_bet: { freeStake: true, stakeReturned: false },
-  // A profit boost is a cash bet at improved odds, so it is recorded as paid
-  // and the boosted price belongs in its odds.
-  profit_boost: PAID,
+  // An odds boost is a cash bet at an improved price, so it is recorded as paid
+  // and the boosted price belongs in its odds. This is *not* the promo of a
+  // similar name: the offer that supplied the improved price — a share of
+  // profit — is a `profit_boost` promo, which answers a different question from
+  // how the bet was placed.
+  odds_boost: PAID,
 };
 
-export function traitsFor(betClass: BetClass | null | undefined): BetClassTraits {
+export function traitsFor(
+  betClass: string | null | undefined,
+): BetClassTraits {
   if (!betClass) return PAID;
-  return BET_CLASS_TRAITS[betClass] ?? PAID;
+  return BET_CLASS_TRAITS[normaliseBetClass(betClass)];
 }
 
-export function isFreeStake(betClass: BetClass | null | undefined): boolean {
+export function isFreeStake(betClass: string | null | undefined): boolean {
   return traitsFor(betClass).freeStake;
 }
 
-export function groupOf(betClass: BetClass): BetClassGroup {
-  return betClass === "no_sweat" ||
-    betClass === "qualifying" ||
-    betClass === "site_credit" ||
-    betClass === "bonus_bet" ||
-    betClass === "profit_boost"
+/** The classes an offer paid for, rather than a strategy the punter chose. */
+const PROMO_CLASSES: readonly BetClass[] = [
+  "no_sweat",
+  "qualifying",
+  "site_credit",
+  "bonus_bet",
+  "odds_boost",
+];
+
+export function groupOf(betClass: string): BetClassGroup {
+  return PROMO_CLASSES.includes(normaliseBetClass(betClass))
     ? "promo"
     : "strategy";
 }
