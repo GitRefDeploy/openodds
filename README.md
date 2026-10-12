@@ -8,6 +8,15 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
 
 ## Features
 
+- **A dashboard that works before it has data** - A fresh install shows the layout
+  it will always show, with real zeros, rather than one line of grey text that
+  reads as broken. The two figures that have no meaning yet — ROI and strike rate
+  — show a dash instead of a confident `0.0%`, because a rate with no bets behind
+  it is undefined, not excellent. It then asks for the four things that have to
+  exist first (a bookmaker, a bet, a deposit, an offer) and ticks each one when
+  the app can *see* it, not when you say so. There are no sample or demo rows:
+  invented numbers on a profit-and-loss screen are worse than an empty one. Hide
+  the checklist once you have outgrown it, and it stays hidden.
 - **Bets** - Single, multi and same-game-multi, each tagged with a **bet type**
   (Normal, Low-Hold, Arbitrage, Middle, Positive EV, Future, Sharp Money, No
   Sweat Bet, Qualifying Bet, Site Credit, Bonus Bet, Odds Boost) so bets can

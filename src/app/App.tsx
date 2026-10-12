@@ -128,7 +128,7 @@ export function App() {
       </aside>
 
       <main className="flex-1 overflow-y-auto bg-canvas px-6 py-6">
-        {route === "dashboard" && <DashboardPage />}
+        {route === "dashboard" && <DashboardPage onNavigate={setRoute} />}
         {route === "bets" && <BetsPage />}
         {route === "stats" && <StatsPage />}
         {route === "promos" && <PromosPage />}
