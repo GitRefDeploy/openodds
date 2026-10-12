@@ -52,7 +52,7 @@ export function SportsPage() {
           if (list.length === 0) return null;
           return (
             <div key={group}>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
                 {SPORT_KIND_LABELS[group]}
               </h2>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
@@ -69,15 +69,15 @@ export function SportsPage() {
                           <p
                             className={
                               enabled
-                                ? "truncate font-medium text-slate-100"
-                                : "truncate font-medium text-slate-500"
+                                ? "truncate font-medium text-ink"
+                                : "truncate font-medium text-faint"
                             }
                           >
                             {sport.name}
                           </p>
                           {!enabled && <Badge tone="neutral">Hidden</Badge>}
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-faint">
                           {s
                             ? `${s.count} bets · ${
                                 s.profitCents >= 0 ? "+" : ""

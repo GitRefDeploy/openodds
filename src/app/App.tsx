@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAppData } from "./DataProvider";
+import { ThemeToggle } from "./ThemeProvider";
 import { AppVersion } from "@/components/ui/AppVersion";
+import { Icon, type IconName } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { BetsPage } from "@/features/bets/BetsPage";
@@ -22,15 +24,38 @@ type Route =
   | "sports"
   | "settings";
 
-const NAV: { key: Route; label: string; icon: string }[] = [
-  { key: "dashboard", label: "Dashboard", icon: "▦" },
-  { key: "bets", label: "Bets", icon: "◧" },
-  { key: "stats", label: "Stats", icon: "▤" },
-  { key: "promos", label: "Promos", icon: "★" },
-  { key: "bankroll", label: "Bankroll", icon: "◈" },
-  { key: "books", label: "Bookmakers", icon: "◉" },
-  { key: "sports", label: "Sports", icon: "◐" },
-  { key: "settings", label: "Settings", icon: "⚙" },
+/**
+ * Grouped rather than a flat list of eight: the first group is what you look at,
+ * the second is what you record, and the third is what you configure — which is
+ * also the order someone meets them in.
+ */
+const NAV_GROUPS: {
+  label: string;
+  items: { key: Route; label: string; icon: IconName }[];
+}[] = [
+  {
+    label: "Overview",
+    items: [
+      { key: "dashboard", label: "Dashboard", icon: "dashboard" },
+      { key: "bets", label: "Bets", icon: "bets" },
+      { key: "stats", label: "Stats", icon: "stats" },
+    ],
+  },
+  {
+    label: "Record",
+    items: [
+      { key: "promos", label: "Promos", icon: "promos" },
+      { key: "bankroll", label: "Bankroll", icon: "bankroll" },
+    ],
+  },
+  {
+    label: "Configure",
+    items: [
+      { key: "books", label: "Bookmakers", icon: "books" },
+      { key: "sports", label: "Sports", icon: "sports" },
+      { key: "settings", label: "Settings", icon: "settings" },
+    ],
+  },
 ];
 
 export function App() {
@@ -43,38 +68,63 @@ export function App() {
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-slate-800 bg-slate-950/80">
-        <div className="px-4 py-5">
-          <p className="text-sm font-semibold tracking-tight text-slate-100">
-            Bet Tracker
-          </p>
-          <p className="text-xs text-slate-500">Local · open source</p>
+      <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
+        <div className="flex items-center gap-2.5 px-4 py-5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-xs font-bold text-accent-ink">
+            BT
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold tracking-tight text-ink">
+              Bet Tracker
+            </span>
+            <span className="block text-xs text-faint">Local · open source</span>
+          </span>
         </div>
-        <nav className="flex flex-col gap-0.5 px-2">
-          {NAV.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setRoute(item.key)}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors",
-                route === item.key
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-400 hover:bg-slate-900 hover:text-slate-200",
-              )}
-            >
-              <span aria-hidden className="w-4 text-center opacity-70">
-                {item.icon}
-              </span>
-              {item.label}
-            </button>
+
+        <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 pb-2">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="px-2 pb-1.5 text-[11px] font-medium tracking-wider text-faint uppercase">
+                {group.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map((item) => {
+                  const active = route === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => setRoute(item.key)}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+                        active
+                          ? "bg-hover font-medium text-ink"
+                          : "text-muted hover:bg-hover hover:text-ink",
+                      )}
+                    >
+                      <Icon
+                        name={item.icon}
+                        className={active ? "text-accent" : "opacity-80"}
+                      />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </nav>
-        <div className="mt-auto px-4 py-4 text-xs text-slate-600">
-          <AppVersion />
+
+        <div className="border-t border-line px-3 py-3">
+          <ThemeToggle />
+          <p className="px-1 pt-2 text-xs text-faint">
+            <AppVersion />
+          </p>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto px-6 py-6">
+      <main className="flex-1 overflow-y-auto bg-canvas px-6 py-6">
         {route === "dashboard" && <DashboardPage />}
         {route === "bets" && <BetsPage />}
         {route === "stats" && <StatsPage />}

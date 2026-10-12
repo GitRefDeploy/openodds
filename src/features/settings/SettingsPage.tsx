@@ -17,6 +17,7 @@ import {
   secretStorageKind,
 } from "@/config/secrets";
 import type { OddsFormat } from "@/domain/odds";
+import { ThemeToggle } from "@/app/ThemeProvider";
 import { AppVersion } from "@/components/ui/AppVersion";
 import { getAppInfo } from "@/config/appInfo";
 import {
@@ -41,7 +42,7 @@ export function SettingsPage() {
 
       <div className="space-y-4">
         <Card>
-          <h2 className="mb-3 text-sm font-semibold text-slate-200">
+          <h2 className="mb-3 text-sm font-semibold text-ink">
             Preferences
           </h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -70,7 +71,15 @@ export function SettingsPage() {
               </Select>
             </Field>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <div className="mt-4">
+            <Field
+              label="Theme"
+              hint="System follows your operating system, including when it changes while the app is open."
+            >
+              <ThemeToggle className="max-w-sm" />
+            </Field>
+          </div>
+          <p className="mt-3 text-xs text-faint">
             Odds are always stored as decimals internally. Changing this only
             affects how they are displayed and entered.
           </p>
@@ -98,8 +107,8 @@ export function SettingsPage() {
         />
 
         <Card>
-          <h2 className="mb-2 text-sm font-semibold text-slate-200">About</h2>
-          <p className="text-sm text-slate-400">
+          <h2 className="mb-2 text-sm font-semibold text-ink">About</h2>
+          <p className="text-sm text-muted">
             Bet Tracker <AppVersion /> · MIT licensed. Runs entirely on your
             machine — there is no server, no account and no telemetry. All API
             keys are optional and entered by you.
@@ -146,24 +155,24 @@ function UpdatesCard() {
   return (
     <Card>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-slate-200">Updates</h2>
+        <h2 className="text-sm font-semibold text-ink">Updates</h2>
         <Badge tone="neutral">
           {currentVersion ? `Running v${currentVersion}` : "Reading version…"}
         </Badge>
       </div>
 
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-muted">
         Installed copies check the signed manifest below. That URL has to be
         readable without credentials, so a repository that is private is enough
         on its own to stop every update.
       </p>
-      <p className="mt-1 text-xs break-all text-slate-500">{UPDATE_FEED_URL}</p>
+      <p className="mt-1 text-xs break-all text-faint">{UPDATE_FEED_URL}</p>
 
       {label ? (
         <p
           className={
             "mt-3 text-sm " +
-            (progress?.state === "error" ? "text-rose-300" : "text-slate-300")
+            (progress?.state === "error" ? "text-negative" : "text-ink")
           }
         >
           {label}
@@ -171,7 +180,7 @@ function UpdatesCard() {
       ) : null}
 
       {feedMessage ? (
-        <p className="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-xs leading-relaxed text-slate-300">
+        <p className="mt-3 rounded-lg border border-line bg-raised p-3 text-xs leading-relaxed text-ink">
           {feedMessage}
         </p>
       ) : null}
@@ -227,9 +236,9 @@ function FeedTokenRow() {
   }, []);
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-800 p-3">
+    <div className="mt-4 rounded-lg border border-line p-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-200">
+        <p className="text-sm font-medium text-ink">
           Private feed token
         </p>
         {configured ? (
@@ -238,7 +247,7 @@ function FeedTokenRow() {
           <Badge tone="neutral">Not configured</Badge>
         )}
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-faint">
         Only needed if the release repository is not public. Public feeds need
         no token, and none is sent unless one is stored here. Stored in the OS
         keychain, never in the repository.
@@ -282,7 +291,7 @@ function IntegrationsCard() {
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-200">
+        <h2 className="text-sm font-semibold text-ink">
           Integrations (optional)
         </h2>
         <Badge tone={storage === "keychain" ? "positive" : "warning"}>
@@ -291,7 +300,7 @@ function IntegrationsCard() {
             : "Browser storage (dev preview)"}
         </Badge>
       </div>
-      <p className="mb-4 text-xs text-slate-500">
+      <p className="mb-4 text-xs text-faint">
         The app works fully without these. Add a key only if you want to pull
         data automatically. Keys never leave this machine and are never written
         into the repository.
@@ -318,9 +327,9 @@ function IntegrationRow({
   }, [integration.name]);
 
   return (
-    <div className="rounded-lg border border-slate-800 p-3">
+    <div className="rounded-lg border border-line p-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-200">
+        <p className="text-sm font-medium text-ink">
           {integration.label}
         </p>
         {configured ? (
@@ -329,7 +338,7 @@ function IntegrationRow({
           <Badge tone="neutral">Not configured</Badge>
         )}
       </div>
-      <p className="mt-1 text-xs text-slate-500">{integration.description}</p>
+      <p className="mt-1 text-xs text-faint">{integration.description}</p>
       <div className="mt-2 flex gap-2">
         <Input
           type="password"
@@ -364,7 +373,7 @@ function IntegrationRow({
         href={integration.docsUrl}
         target="_blank"
         rel="noreferrer"
-        className="mt-2 inline-block text-xs text-sky-400 hover:underline"
+        className="mt-2 inline-block text-xs text-info hover:underline"
       >
         Get a key →
       </a>
@@ -375,8 +384,8 @@ function IntegrationRow({
 function DataCard({ onExport }: { onExport: () => void | Promise<void> }) {
   return (
     <Card>
-      <h2 className="mb-2 text-sm font-semibold text-slate-200">Your data</h2>
-      <p className="mb-3 text-sm text-slate-400">
+      <h2 className="mb-2 text-sm font-semibold text-ink">Your data</h2>
+      <p className="mb-3 text-sm text-muted">
         Everything lives in a local SQLite file. Use the export button as a
         backup before uninstalling or moving machines.
       </p>
@@ -385,7 +394,7 @@ function DataCard({ onExport }: { onExport: () => void | Promise<void> }) {
           Export all data (JSON)
         </Button>
       </div>
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-faint">
         CSV import from bookmaker statements is planned for a future release.
       </p>
     </Card>

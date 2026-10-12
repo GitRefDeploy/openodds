@@ -104,7 +104,7 @@ export function BetsPage() {
         header: ({ table: t }) => (
           <input
             type="checkbox"
-            className="accent-emerald-500"
+            className="accent-[var(--accent)]"
             aria-label="Select all bets"
             checked={t.getIsAllPageRowsSelected()}
             onChange={t.getToggleAllPageRowsSelectedHandler()}
@@ -113,7 +113,7 @@ export function BetsPage() {
         cell: ({ row }) => (
           <input
             type="checkbox"
-            className="accent-emerald-500"
+            className="accent-[var(--accent)]"
             aria-label="Select bet"
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
@@ -124,16 +124,16 @@ export function BetsPage() {
         id: "date",
         header: "Date",
         cell: (info) => (
-          <span className="text-slate-400">{formatDate(info.getValue())}</span>
+          <span className="text-muted">{formatDate(info.getValue())}</span>
         ),
       }),
       columnHelper.accessor("description", {
         header: "Bet",
         cell: (info) => (
-          <span className="text-slate-200">
+          <span className="text-ink">
             {info.getValue() || "—"}
             {info.row.original.bet_type !== "single" && (
-              <span className="ml-2 text-xs text-slate-500">
+              <span className="ml-2 text-xs text-faint">
                 {BET_TYPE_LABELS[info.row.original.bet_type]}
               </span>
             )}
@@ -142,13 +142,13 @@ export function BetsPage() {
       }),
       columnHelper.accessor("book_name", {
         header: "Book",
-        cell: (info) => <span className="text-slate-300">{info.getValue()}</span>,
+        cell: (info) => <span className="text-ink">{info.getValue()}</span>,
       }),
       columnHelper.accessor((r) => r.sport_name ?? "—", {
         id: "sport",
         header: "Sport",
         cell: (info) => (
-          <span className="text-slate-400">{info.getValue()}</span>
+          <span className="text-muted">{info.getValue()}</span>
         ),
       }),
       columnHelper.accessor("stake_cents", {
@@ -164,11 +164,11 @@ export function BetsPage() {
         header: "CLV",
         cell: (info) =>
           info.getValue() ? (
-            <span className="text-slate-400">
+            <span className="text-muted">
               {formatOdds(info.getValue() as number, oddsFormat)}
             </span>
           ) : (
-            <span className="text-slate-600">—</span>
+            <span className="text-faint">—</span>
           ),
       }),
       columnHelper.accessor("status", {
@@ -194,7 +194,7 @@ export function BetsPage() {
         cell: (info) => {
           const positionId = info.getValue();
           if (positionId === null || positionId === undefined) {
-            return <span className="text-slate-600">—</span>;
+            return <span className="text-faint">—</span>;
           }
           const margin = margins.get(positionId);
           if (margin === undefined) {
@@ -212,9 +212,9 @@ export function BetsPage() {
         header: "Promo",
         cell: (info) =>
           info.getValue() > 0 ? (
-            <span className="text-emerald-400">{money(info.getValue())}</span>
+            <span className="text-positive">{money(info.getValue())}</span>
           ) : (
-            <span className="text-slate-600">—</span>
+            <span className="text-faint">—</span>
           ),
       }),
       columnHelper.accessor("profitCents", {
@@ -224,14 +224,14 @@ export function BetsPage() {
             <span
               className={
                 info.getValue() >= 0
-                  ? "font-medium text-emerald-400"
-                  : "font-medium text-rose-400"
+                  ? "font-medium text-positive"
+                  : "font-medium text-negative"
               }
             >
               {formatMoney(info.getValue(), currency, { signed: true })}
             </span>
           ) : (
-            <span className="text-slate-600">—</span>
+            <span className="text-faint">—</span>
           ),
       }),
       columnHelper.display({
@@ -362,7 +362,7 @@ export function BetsPage() {
 
       {selectedIds.length > 0 && (
         <Card className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm text-slate-300">
+          <span className="text-sm text-ink">
             {selectedIds.length} selected
           </span>
           <div className="flex gap-2">
@@ -413,12 +413,12 @@ export function BetsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-slate-800">
+                <tr key={hg.id} className="border-b border-line">
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
                       onClick={header.column.getToggleSortingHandler()}
-                      className="cursor-pointer whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-slate-400 select-none"
+                      className="cursor-pointer whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted select-none"
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -435,7 +435,7 @@ export function BetsPage() {
               {table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-slate-800/60 hover:bg-slate-800/30"
+                  className="border-b border-line hover:bg-hover"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2.5 align-middle">

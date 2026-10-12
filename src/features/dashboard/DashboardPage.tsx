@@ -105,11 +105,11 @@ export function DashboardPage() {
       </div>
 
       <Card className="mt-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-200">
+        <h2 className="mb-3 text-sm font-semibold text-ink">
           Cumulative profit
         </h2>
         {curve.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-faint">
             No settled bets to chart yet.
           </p>
         ) : (
@@ -120,17 +120,17 @@ export function DashboardPage() {
             }))}>
               <defs>
                 <linearGradient id="plFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--positive)" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="var(--positive)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
-              <YAxis stroke="#64748b" fontSize={11} width={64} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+              <XAxis dataKey="date" stroke="var(--muted)" fontSize={11} />
+              <YAxis stroke="var(--muted)" fontSize={11} width={64} />
               <Tooltip
                 contentStyle={{
-                  background: "#0f172a",
-                  border: "1px solid #334155",
+                  background: "var(--raised)",
+                  border: "1px solid var(--line)",
                   borderRadius: 8,
                   fontSize: 12,
                 }}
@@ -139,7 +139,7 @@ export function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="profit"
-                stroke="#10b981"
+                stroke="var(--positive)"
                 fill="url(#plFill)"
                 strokeWidth={2}
               />
@@ -175,9 +175,9 @@ function BreakdownChart({
 }) {
   return (
     <Card>
-      <h2 className="mb-3 text-sm font-semibold text-slate-200">{title}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-ink">{title}</h2>
       {groups.length === 0 ? (
-        <p className="text-sm text-slate-500">Nothing settled yet.</p>
+        <p className="text-sm text-faint">Nothing settled yet.</p>
       ) : (
         <ResponsiveContainer width="100%" height={240}>
           <BarChart
@@ -188,19 +188,19 @@ function BreakdownChart({
             layout="vertical"
             margin={{ left: 20 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-            <XAxis type="number" stroke="#64748b" fontSize={11} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+            <XAxis type="number" stroke="var(--muted)" fontSize={11} />
             <YAxis
               type="category"
               dataKey="label"
-              stroke="#94a3b8"
+              stroke="var(--muted)"
               fontSize={11}
               width={110}
             />
             <Tooltip
               contentStyle={{
-                background: "#0f172a",
-                border: "1px solid #334155",
+                background: "var(--raised)",
+                border: "1px solid var(--line)",
                 borderRadius: 8,
                 fontSize: 12,
               }}
@@ -215,7 +215,7 @@ function BreakdownChart({
               {groups.map((g) => (
                 <Cell
                   key={g.key}
-                  fill={g.profitCents >= 0 ? "#10b981" : "#f43f5e"}
+                  fill={g.profitCents >= 0 ? "var(--positive)" : "var(--negative)"}
                 />
               ))}
             </Bar>

@@ -102,7 +102,7 @@ export function StatsPage() {
               <Card key={position.id}>
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-100">
+                    <span className="font-medium text-ink">
                       {position.legs.length}-leg{" "}
                       {positionLabel(position.legs)}
                     </span>
@@ -112,23 +112,23 @@ export function StatsPage() {
                     {position.settled && <Badge tone="neutral">Settled</Badge>}
                   </div>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-slate-400">
+                    <span className="text-muted">
                       Staked{" "}
-                      <span className="text-slate-200">
+                      <span className="text-ink">
                         {formatMoney(position.cashStakedCents, currency)}
                       </span>
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-muted">
                       Guaranteed{" "}
-                      <span className="text-slate-200">
+                      <span className="text-ink">
                         {formatMoney(position.guaranteedPayoutCents, currency)}
                       </span>
                     </span>
                     <span
                       className={
                         position.realisedProfitCents >= 0
-                          ? "font-medium text-emerald-400"
-                          : "font-medium text-rose-400"
+                          ? "font-medium text-positive"
+                          : "font-medium text-negative"
                       }
                     >
                       Realised{" "}
@@ -154,7 +154,7 @@ export function StatsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-slate-800 text-left text-slate-400">
+                      <tr className="border-b border-line text-left text-muted">
                         <th className="py-1.5 pr-3 font-medium">Bet</th>
                         <th className="py-1.5 pr-3 font-medium">Book</th>
                         <th className="py-1.5 pr-3 font-medium">Odds</th>
@@ -166,23 +166,23 @@ export function StatsPage() {
                     </thead>
                     <tbody>
                       {position.legs.map((leg) => (
-                        <tr key={leg.id} className="border-b border-slate-800/60">
-                          <td className="py-1.5 pr-3 text-slate-200">
+                        <tr key={leg.id} className="border-b border-line">
+                          <td className="py-1.5 pr-3 text-ink">
                             {leg.description || "—"}
                           </td>
-                          <td className="py-1.5 pr-3 text-slate-400">
+                          <td className="py-1.5 pr-3 text-muted">
                             {leg.book_name}
                           </td>
-                          <td className="py-1.5 pr-3 text-slate-300 tabular-nums">
+                          <td className="py-1.5 pr-3 text-ink tabular-nums">
                             {formatOdds(leg.odds, oddsFormat)}
                           </td>
-                          <td className="py-1.5 pr-3 text-slate-300 tabular-nums">
+                          <td className="py-1.5 pr-3 text-ink tabular-nums">
                             {formatMoney(leg.stake_cents, currency)}
                             {leg.freeStake && (
-                              <span className="ml-1 text-violet-300">free</span>
+                              <span className="ml-1 text-promo">free</span>
                             )}
                           </td>
-                          <td className="py-1.5 pr-3 text-slate-300 tabular-nums">
+                          <td className="py-1.5 pr-3 text-ink tabular-nums">
                             {formatMoney(leg.potentialPayoutCents, currency)}
                           </td>
                           <td className="py-1.5 pr-3">
@@ -195,8 +195,8 @@ export function StatsPage() {
                               <span
                                 className={
                                   leg.profitCents >= 0
-                                    ? "text-emerald-400"
-                                    : "text-rose-400"
+                                    ? "text-positive"
+                                    : "text-negative"
                                 }
                               >
                                 {formatMoney(leg.profitCents, currency, {
@@ -204,7 +204,7 @@ export function StatsPage() {
                                 })}
                               </span>
                             ) : (
-                              <span className="text-slate-600">—</span>
+                              <span className="text-faint">—</span>
                             )}
                           </td>
                         </tr>

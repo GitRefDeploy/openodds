@@ -120,8 +120,8 @@ export function PromosPage() {
               <Card key={promo.id} className="flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium text-slate-100">{promo.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-medium text-ink">{promo.name}</p>
+                    <p className="text-xs text-faint">
                       {promo.book_id
                         ? books.find((b) => b.id === promo.book_id)?.name
                         : "Any bookmaker"}
@@ -129,7 +129,7 @@ export function PromosPage() {
                   </div>
                   <Badge tone="info">{promoTypeLabel(promo.type)}</Badge>
                 </div>
-                <p className="text-sm text-slate-300">
+                <p className="text-sm text-ink">
                   {describePromoValue(
                     {
                       type: promo.type,
@@ -139,16 +139,16 @@ export function PromosPage() {
                     (cents) => formatMoney(cents, currency),
                   )}
                   {promo.min_odds > 0 && (
-                    <span className="ml-2 text-xs text-slate-500">
+                    <span className="ml-2 text-xs text-faint">
                       min odds {promo.min_odds.toFixed(2)}
                     </span>
                   )}
                 </p>
-                <div className="mt-auto flex items-center justify-between border-t border-slate-800 pt-2 text-xs">
-                  <span className="text-slate-400">
+                <div className="mt-auto flex items-center justify-between border-t border-line pt-2 text-xs">
+                  <span className="text-muted">
                     Used on {u?.count ?? 0} bets
                   </span>
-                  <span className="text-emerald-400">
+                  <span className="text-positive">
                     {formatMoney(u?.total_value_cents ?? 0, currency)} value
                   </span>
                 </div>
@@ -233,5 +233,5 @@ export function PromosPage() {
 }
 
 function Error({ children }: { children?: ReactNode }) {
-  return <span className="text-xs text-rose-400">{children}</span>;
+  return <span className="text-xs text-negative">{children}</span>;
 }

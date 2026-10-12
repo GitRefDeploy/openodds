@@ -141,17 +141,17 @@ export function BankrollPage() {
       </div>
 
       {activeBooks.length === 0 && (
-        <Card className="mt-4 text-sm text-slate-400">
+        <Card className="mt-4 text-sm text-muted">
           Add a bookmaker first — cash movements are recorded against a book.
         </Card>
       )}
 
       <Card className="mt-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-200">
+        <h2 className="mb-3 text-sm font-semibold text-ink">
           Bankroll over time
         </h2>
         {curve.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-faint">
             No transactions or settled bets yet.
           </p>
         ) : (
@@ -159,17 +159,17 @@ export function BankrollPage() {
             <AreaChart data={curve}>
               <defs>
                 <linearGradient id="bankFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#38bdf8" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--info)" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="var(--info)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
-              <YAxis stroke="#64748b" fontSize={11} width={64} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+              <XAxis dataKey="date" stroke="var(--muted)" fontSize={11} />
+              <YAxis stroke="var(--muted)" fontSize={11} width={64} />
               <Tooltip
                 contentStyle={{
-                  background: "#0f172a",
-                  border: "1px solid #334155",
+                  background: "var(--raised)",
+                  border: "1px solid var(--line)",
                   borderRadius: 8,
                   fontSize: 12,
                 }}
@@ -181,7 +181,7 @@ export function BankrollPage() {
               <Area
                 type="monotone"
                 dataKey="balance"
-                stroke="#38bdf8"
+                stroke="var(--info)"
                 fill="url(#bankFill)"
                 strokeWidth={2}
               />
@@ -192,13 +192,13 @@ export function BankrollPage() {
 
       <Card className="mt-4 p-0">
         {transactions.length === 0 ? (
-          <p className="p-6 text-sm text-slate-500">
+          <p className="p-6 text-sm text-faint">
             No transactions recorded yet.
           </p>
         ) : (
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
                 <th className="px-3 py-2.5 text-left font-medium">Date</th>
                 <th className="px-3 py-2.5 text-left font-medium">Book</th>
                 <th className="px-3 py-2.5 text-left font-medium">Type</th>
@@ -213,11 +213,11 @@ export function BankrollPage() {
                   amountCents: t.amount_cents,
                 });
                 return (
-                  <tr key={t.id} className="border-b border-slate-800/60">
-                    <td className="px-3 py-2.5 text-slate-400">
+                  <tr key={t.id} className="border-b border-line">
+                    <td className="px-3 py-2.5 text-muted">
                       {formatDate(t.occurred_at ?? t.created_at)}
                     </td>
-                    <td className="px-3 py-2.5 text-slate-300">{t.book_name}</td>
+                    <td className="px-3 py-2.5 text-ink">{t.book_name}</td>
                     <td className="px-3 py-2.5">
                       <Badge
                         tone={t.type === "withdrawal" ? "warning" : "info"}
@@ -228,7 +228,7 @@ export function BankrollPage() {
                     <td
                       className={
                         "px-3 py-2.5 text-right font-medium " +
-                        (signed >= 0 ? "text-emerald-400" : "text-rose-400")
+                        (signed >= 0 ? "text-positive" : "text-negative")
                       }
                     >
                       {formatMoney(signed, currency, { signed: true })}

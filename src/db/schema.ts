@@ -182,7 +182,10 @@ UPDATE bets SET bet_class = 'odds_boost' WHERE bet_class = 'profit_boost';
 export const DEFAULT_SETTINGS: Record<string, string> = {
   currency: "AUD",
   oddsFormat: "decimal",
-  theme: "dark",
+  // A fresh install follows the machine rather than assuming dark, since a
+  // bright room and a dark one want different answers. An existing database
+  // keeps whatever it already stored.
+  theme: "system",
   setupComplete: "false",
 };
 

@@ -1,9 +1,32 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bet Tracker</title>
+    <script>
+      // Paint in the right theme before the app boots. The preference lives in
+      // the database, which is read asynchronously, so painting from there would
+      // show the wrong theme first and correct it a frame later. A cached copy
+      // keeps this in step with the provider in src/app/ThemeProvider.tsx.
+      (function () {
+        var preference = "system";
+        try {
+          preference = localStorage.getItem("bet-tracker.theme") || "system";
+        } catch (error) {
+          /* storage unavailable: fall back to the system preference */
+        }
+        var dark =
+          preference === "dark" ||
+          (preference !== "light" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute(
+          "data-theme",
+          dark ? "dark" : "light",
+        );
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

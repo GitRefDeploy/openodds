@@ -31,16 +31,16 @@ export function SetupWizard() {
   return (
     <div className="flex h-full items-center justify-center p-8">
       <Card className="w-full max-w-xl">
-        <div className="mb-1 text-xs uppercase tracking-wide text-emerald-400">
+        <div className="mb-1 text-xs uppercase tracking-wide text-positive">
           Step {step + 1} of 3
         </div>
 
         {step === 0 && (
           <div className="space-y-4">
-            <h1 className="text-xl font-semibold text-slate-100">
+            <h1 className="text-xl font-semibold text-ink">
               Welcome to Bet Tracker
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               A local-first tracker for betting profit and loss, promos and
               bankroll. Everything is stored on this machine — nothing is sent
               anywhere. You can change all of this later in Settings.
@@ -50,7 +50,7 @@ export function SetupWizard() {
 
         {step === 1 && (
           <div className="space-y-4">
-            <h1 className="text-xl font-semibold text-slate-100">
+            <h1 className="text-xl font-semibold text-ink">
               Preferences
             </h1>
             <Field label="Currency">
@@ -83,10 +83,10 @@ export function SetupWizard() {
 
         {step === 2 && (
           <div className="space-y-4">
-            <h1 className="text-xl font-semibold text-slate-100">
+            <h1 className="text-xl font-semibold text-ink">
               Your bookmakers
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted">
               Pick any you use, or add your own later. These are just labels —
               the app ships with none selected.
             </p>
@@ -106,8 +106,8 @@ export function SetupWizard() {
                     className={
                       "rounded-full border px-3 py-1.5 text-sm transition-colors " +
                       (active
-                        ? "border-emerald-500 bg-emerald-900/40 text-emerald-200"
-                        : "border-slate-700 text-slate-300 hover:border-slate-500")
+                        ? "border-accent bg-positive-soft text-positive"
+                        : "border-line text-ink hover:border-line")
                     }
                   >
                     {name}
@@ -132,7 +132,7 @@ export function SetupWizard() {
               </div>
             </Field>
             {selected.length > 0 && (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-faint">
                 Adding: {selected.join(", ")}
               </p>
             )}

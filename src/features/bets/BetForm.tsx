@@ -322,18 +322,18 @@ export function BetForm({
           </Select>
         </Field>
 
-        <div className="md:col-span-2 rounded-lg border border-slate-800 p-3">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+        <div className="md:col-span-2 rounded-lg border border-line p-3">
+          <label className="flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
-              className="accent-emerald-500"
+              className="accent-[var(--accent)]"
               checked={isBonusBet}
               onChange={toggleBonusBet}
             />
             Bonus Bet
           </label>
           {isBonusBet ? (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-faint">
               Not your money, and the stake is never returned — a{" "}
               {formatMoney(stakeCents || 0, currency)} bonus bet at 2.40 pays
               about {formatMoney(Math.round((stakeCents || 0) * 1.4), currency)}{" "}
@@ -342,12 +342,12 @@ export function BetForm({
               loss costs you nothing.
             </p>
           ) : traits.freeStake ? (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-faint">
               {BET_CLASS_LABELS[betClass]} — not your money, so it is left out of
               the amount staked. The stake is still returned if it wins.
             </p>
           ) : (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-faint">
               Tick this when the stake came from the bookmaker rather than your
               bankroll.
             </p>
@@ -428,9 +428,9 @@ export function BetForm({
         </Field>
 
         {potentialPayoutCents !== null && (
-          <p className="md:col-span-2 text-xs text-slate-400">
+          <p className="md:col-span-2 text-xs text-muted">
             Pays{" "}
-            <span className="font-medium text-slate-200">
+            <span className="font-medium text-ink">
               {formatMoney(potentialPayoutCents, currency)}
             </span>{" "}
             if it wins
@@ -440,12 +440,12 @@ export function BetForm({
       </div>
 
       {isMulti && (
-        <div className="mt-5 rounded-lg border border-slate-800 p-3">
+        <div className="mt-5 rounded-lg border border-line p-3">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-200">Legs</h3>
+            <h3 className="text-sm font-semibold text-ink">Legs</h3>
             <div className="flex items-center gap-3">
               {combinedOdds && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted">
                   Combined: {formatOdds(combinedOdds, oddsFormat)}
                 </span>
               )}
@@ -463,7 +463,7 @@ export function BetForm({
             </div>
           </div>
           {legs.length === 0 && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-faint">
               Add at least two legs for a multi.
             </p>
           )}
@@ -520,12 +520,12 @@ export function BetForm({
         </div>
       )}
 
-      <div className="mt-5 rounded-lg border border-slate-800 p-3">
-        <h3 className="mb-2 text-sm font-semibold text-slate-200">
+      <div className="mt-5 rounded-lg border border-line p-3">
+        <h3 className="mb-2 text-sm font-semibold text-ink">
           Promos applied
         </h3>
         {promos.length === 0 ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-faint">
             No promos defined yet. Add them from the Promos page.
           </p>
         ) : (
@@ -535,11 +535,11 @@ export function BetForm({
               return (
                 <div
                   key={promo.id}
-                  className="flex items-center gap-3 text-sm text-slate-300"
+                  className="flex items-center gap-3 text-sm text-ink"
                 >
                   <input
                     type="checkbox"
-                    className="accent-emerald-500"
+                    className="accent-[var(--accent)]"
                     checked={!!link}
                     onChange={() => togglePromo(promo.id)}
                   />
@@ -562,7 +562,7 @@ export function BetForm({
                 </div>
               );
             })}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-faint">
               Promo value is the dollar benefit you got — adjust it to the true
               amount.
             </p>
@@ -591,5 +591,5 @@ export function BetForm({
 }
 
 function ErrorText({ children }: { children: ReactNode }) {
-  return <span className="text-xs text-rose-400">{children}</span>;
+  return <span className="text-xs text-negative">{children}</span>;
 }

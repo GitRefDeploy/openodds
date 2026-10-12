@@ -1,7 +1,108 @@
 @import "tailwindcss";
 
+/*
+ * Colour tokens.
+ *
+ * Every surface, border and text colour in the app comes from here, so a screen
+ * cannot quietly invent its own shade and a theme cannot be half-applied. The
+ * raw values are plain custom properties rather than `@theme` literals because
+ * they change at runtime: `[data-theme="light"]` overrides them, and the
+ * `@theme inline` block below maps them to utilities that follow that override
+ * instead of baking in a value at build time.
+ *
+ * Three surface levels, deliberately: the page, the panels on it, and the things
+ * that sit on top of a panel (inputs, popovers, hovered rows).
+ *
+ * Profit and loss have their own two colours. Blue and pink are not among them:
+ * on an exchange those mean back and lay, which is a different question from
+ * whether a bet won, and conflating the two would make both unreadable.
+ */
 :root {
   color-scheme: dark;
+
+  --canvas: #0d1117;
+  --panel: #141a22;
+  --raised: #1b232d;
+  --hover: #222c37;
+  --line: #26303c;
+
+  --ink: #eef2f6;
+  --muted: #9aa7b4;
+  --faint: #6b7784;
+
+  --accent: #10b981;
+  --accent-strong: #34d399;
+  --accent-ink: #06281d;
+
+  --positive: #53d49a;
+  --positive-soft: #10322a;
+  --negative: #ff727c;
+  --negative-soft: #3a1d22;
+  --warning: #f0c66a;
+  --warning-soft: #33290f;
+  --info: #63a4f0;
+  --info-soft: #12293d;
+  --promo: #b98bff;
+  --promo-soft: #2a1f3d;
+  --neutral-soft: #242e39;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --canvas: #f4f6f8;
+  --panel: #ffffff;
+  --raised: #f0f3f6;
+  --hover: #e7ecf1;
+  --line: #d6dde4;
+
+  --ink: #18212b;
+  --muted: #5d6b7a;
+  --faint: #8592a0;
+
+  --accent: #0f7a54;
+  --accent-strong: #0b6244;
+  --accent-ink: #ffffff;
+
+  --positive: #137a50;
+  --positive-soft: #e2f2ea;
+  --negative: #c43d4b;
+  --negative-soft: #fbe7e9;
+  --warning: #8a6414;
+  --warning-soft: #f8f1dc;
+  --info: #1f6feb;
+  --info-soft: #e3edfb;
+  --promo: #6d3fd1;
+  --promo-soft: #eee7fb;
+  --neutral-soft: #e8edf2;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-promo: var(--promo);
+  --color-promo-soft: var(--promo-soft);
+  --color-neutral-soft: var(--neutral-soft);
 }
 
 html,
@@ -12,11 +113,17 @@ body,
 
 body {
   margin: 0;
-  background-color: #0b0f17;
-  color: #e2e8f0;
+  background-color: var(--canvas);
+  color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Money and odds are read down a column, so digits line up by default. */
+table,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 ::-webkit-scrollbar {
@@ -24,7 +131,7 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #263041;
+  background: var(--line);
   border-radius: 6px;
 }
 ::-webkit-scrollbar-track {
@@ -36,4 +143,9 @@ select,
 textarea,
 button {
   font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

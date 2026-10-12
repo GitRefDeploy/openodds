@@ -86,7 +86,7 @@ export function BooksPage() {
                       className="h-3 w-3 rounded-full"
                       style={{ background: book.color }}
                     />
-                    <p className="font-medium text-slate-100">{book.name}</p>
+                    <p className="font-medium text-ink">{book.name}</p>
                   </div>
                   {book.archived === 1 ? (
                     <Badge tone="neutral">Archived</Badge>
@@ -96,20 +96,20 @@ export function BooksPage() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-faint">
                   {book.currency}
                   {book.commission_rate > 0 &&
                     ` · ${(book.commission_rate * 100).toFixed(0)}% commission`}
                 </p>
-                <div className="mt-auto flex items-center justify-between border-t border-slate-800 pt-2 text-xs">
-                  <span className="text-slate-400">
+                <div className="mt-auto flex items-center justify-between border-t border-line pt-2 text-xs">
+                  <span className="text-muted">
                     {s?.count ?? 0} settled bets
                   </span>
                   <span
                     className={
                       (s?.profitCents ?? 0) >= 0
-                        ? "text-emerald-400"
-                        : "text-rose-400"
+                        ? "text-positive"
+                        : "text-negative"
                     }
                   >
                     {formatMoney(s?.profitCents ?? 0, currency, {
@@ -178,5 +178,5 @@ export function BooksPage() {
 }
 
 function ErrorText({ children }: { children?: ReactNode }) {
-  return <span className="text-xs text-rose-400">{children}</span>;
+  return <span className="text-xs text-negative">{children}</span>;
 }

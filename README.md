@@ -36,6 +36,12 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
 - **Positions** - Two or more bets that offset each other (an arbitrage, a
   middle, a bonus bet hedged against a qualifying bet) can be grouped, and the
   app reports the margin the group guarantees rather than two unrelated bets.
+- **Light and dark themes** - Every colour comes from one set of semantic tokens
+  (`canvas`, `panel`, `ink`, `muted`, `positive`, `negative`, …), so the theme
+  cannot be applied to half the app. Follow the operating system or pin it;
+  "System" is live, so a machine that switches at sunset takes the app with it.
+  Profit and loss keep their own colours, deliberately *not* blue and pink — on an
+  exchange those mean back and lay, which is a different question.
 - **Sports categorisation** - Thoroughbred, harness and greyhound racing, soccer, AFL,
   NRL, cricket, tennis and more to be added. Enable what you use, add your own.
 - **Optional integrations** — Free & paid odds/form APIs are supported, but

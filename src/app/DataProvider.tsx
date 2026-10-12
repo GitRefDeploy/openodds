@@ -111,9 +111,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center p-8">
-        <div className="max-w-md rounded-xl border border-rose-800 bg-rose-950/40 p-5 text-sm text-rose-200">
+        <div className="max-w-md rounded-xl border border-line bg-negative-soft p-5 text-sm text-negative">
           <p className="mb-1 font-semibold">Could not open the database</p>
-          <p className="text-rose-300/90">{error}</p>
+          <p className="text-negative">{error}</p>
         </div>
       </div>
     );
@@ -121,7 +121,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   if (!value) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+      <div className="flex h-full items-center justify-center text-sm text-muted">
         Opening database…
       </div>
     );
