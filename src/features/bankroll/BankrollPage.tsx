@@ -169,7 +169,18 @@ export function BankrollPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              <XAxis dataKey="date" stroke="var(--muted)" fontSize={11} />
+              {/*
+               * As on the dashboard: this curve has one point per cash movement
+               * *and* per settled bet, so a day with both put the same date on
+               * the axis twice. `allowDuplicatedCategory` keeps one tick per
+               * distinct date without dropping the points behind it.
+               */}
+              <XAxis
+                dataKey="date"
+                stroke="var(--muted)"
+                fontSize={11}
+                allowDuplicatedCategory={false}
+              />
               <YAxis stroke="var(--muted)" fontSize={11} width={64} />
               <Tooltip
                 contentStyle={{

@@ -215,7 +215,21 @@ export function DashboardPage({
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              <XAxis dataKey="date" stroke="var(--muted)" fontSize={11} />
+              {/*
+               * One tick per *date*, not one per bet. The curve has a point for
+               * every settled bet, so two bets that settled the same day put the
+               * same label on the axis twice: this chart really did print
+               * `2026-03-24` on two neighbouring ticks. `allowDuplicatedCategory`
+               * is the library's answer — the domain becomes the distinct dates,
+               * and the points that share one are drawn at that date's position
+               * rather than being dropped.
+               */}
+              <XAxis
+                dataKey="date"
+                stroke="var(--muted)"
+                fontSize={11}
+                allowDuplicatedCategory={false}
+              />
               <YAxis stroke="var(--muted)" fontSize={11} width={64} />
               <Tooltip
                 contentStyle={{
