@@ -61,25 +61,38 @@ fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
     PathBuf::from(name)
 }
 
-/// Where an older install kept its database file.
+/// The directories an older install could have used, given this install's.
 ///
 /// The SQL plugin resolves a relative database path against the app-config
-/// directory, which is keyed by the bundle identifier, so the old file sits in a
-/// sibling directory named after the old identifier. Windows additionally has a
-/// local (non-roaming) data directory, so both roots are tried rather than
-/// assuming the one this platform's release happened to use.
-fn legacy_database_paths(app: &tauri::AppHandle) -> Vec<PathBuf> {
+/// directory, which is the application-data root plus the bundle identifier — so
+/// the old file sits in a *sibling* of this install's directory, named after the
+/// old identifier. Windows additionally has a local (non-roaming) data root, so
+/// both are covered rather than assuming which one this platform's release used.
+fn legacy_roots(config_dir: &Path, local_dir: &Path) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
-    for dir in [app.path().app_config_dir(), app.path().app_local_data_dir()] {
-        if let Ok(dir) = dir {
-            if let Some(parent) = dir.parent() {
-                roots.push(parent.join(LEGACY_IDENTIFIER));
-            }
+    for dir in [config_dir, local_dir] {
+        if let Some(parent) = dir.parent() {
+            roots.push(parent.join(LEGACY_IDENTIFIER));
         }
     }
     roots.sort();
     roots.dedup();
     roots
+}
+
+/// Where an older install kept its database file.
+fn legacy_database_paths(app: &tauri::AppHandle) -> Vec<PathBuf> {
+    let Ok(config_dir) = app.path().app_config_dir() else {
+        return Vec::new();
+    };
+    // Falling back to the config directory when the local one is unavailable
+    // keeps this to the platforms that actually have two roots.
+    let local_dir = app
+        .path()
+        .app_local_data_dir()
+        .unwrap_or_else(|_| config_dir.clone());
+
+    legacy_roots(&config_dir, &local_dir)
         .into_iter()
         .map(|root| root.join(LEGACY_DATABASE))
         .collect()
@@ -258,6 +271,42 @@ mod tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[test]
+    fn looks_for_the_older_install_beside_this_one() {
+        // The data root is shared; only the directory named after the identifier
+        // differs, which is why the old one is found as a sibling and not by
+        // searching the filesystem.
+        let roots = legacy_roots(
+            &Path::new("/home/me/.config").join("io.github.openodds.app"),
+            &Path::new("/home/me/.local/share").join("io.github.openodds.app"),
+        );
+
+        assert_eq!(
+            roots,
+            vec![
+                Path::new("/home/me/.config").join(LEGACY_IDENTIFIER),
+                Path::new("/home/me/.local/share").join(LEGACY_IDENTIFIER),
+            ]
+        );
+    }
+
+    #[test]
+    fn never_mistakes_this_install_for_the_older_one() {
+        // One root on both platforms (the usual case outside Windows), and the
+        // answer is the sibling, never this install's own directory.
+        let config = Path::new("/home/me/.config").join("io.github.openodds.app");
+
+        let roots = legacy_roots(&config, &config);
+
+        assert_eq!(
+            roots,
+            vec![Path::new("/home/me/.config").join(LEGACY_IDENTIFIER)]
+        );
+        assert!(roots
+            .iter()
+            .all(|root| !root.ends_with("io.github.openodds.app")));
     }
 
     #[test]
