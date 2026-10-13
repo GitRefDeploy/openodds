@@ -12,6 +12,11 @@ constraints in mind for any change.
 2. **No paid services.** Integrations must work on free tiers or be optional.
 3. **No backend.** The app talks to a local SQLite file and nothing else.
 4. **Every user-specific value is configurable in-app**, not hardcoded.
+5. **Commits credit only their human authors.** No `Co-Authored-By`, "generated
+   with", "assisted by" or similar trailers for an assistant, agent, tool, bot or
+   service — in commit messages or pull request descriptions. Whoever writes a
+   change, the commit names the person accountable for it. Credit for anything
+   else is added deliberately by the maintainer, never by default.
 
 ## Development
 
