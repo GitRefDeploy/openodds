@@ -6,8 +6,15 @@
  */
 import { isTauriRuntime } from "./runtime";
 
-const SERVICE = "openodds";
-const BROWSER_PREFIX = "openodds.secret.";
+/**
+ * The name every key is filed under in the OS credential store.
+ *
+ * Exported because the one-time import of a pre-rename install's keys has to be
+ * told which service to write to, and a second copy of this string would let the
+ * two drift into keys saved under one name and looked up under another.
+ */
+export const SECRET_SERVICE = "openodds";
+const BROWSER_PREFIX = `${SECRET_SERVICE}.secret.`;
 
 export function secretStorageKind(): "keychain" | "browser" {
   return isTauriRuntime() ? "keychain" : "browser";
@@ -20,7 +27,7 @@ async function invoke<T>(cmd: string, args: Record<string, unknown>): Promise<T>
 
 export async function saveSecret(name: string, value: string): Promise<void> {
   if (isTauriRuntime()) {
-    await invoke("save_secret", { service: SERVICE, account: name, value });
+    await invoke("save_secret", { service: SECRET_SERVICE, account: name, value });
     return;
   }
   globalThis.localStorage?.setItem(BROWSER_PREFIX + name, value);
@@ -28,14 +35,14 @@ export async function saveSecret(name: string, value: string): Promise<void> {
 
 export async function getSecret(name: string): Promise<string | null> {
   if (isTauriRuntime()) {
-    return invoke<string | null>("get_secret", { service: SERVICE, account: name });
+    return invoke<string | null>("get_secret", { service: SECRET_SERVICE, account: name });
   }
   return globalThis.localStorage?.getItem(BROWSER_PREFIX + name) ?? null;
 }
 
 export async function deleteSecret(name: string): Promise<void> {
   if (isTauriRuntime()) {
-    await invoke("delete_secret", { service: SERVICE, account: name });
+    await invoke("delete_secret", { service: SECRET_SERVICE, account: name });
     return;
   }
   globalThis.localStorage?.removeItem(BROWSER_PREFIX + name);

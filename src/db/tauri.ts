@@ -1,12 +1,20 @@
 import Database from "@tauri-apps/plugin-sql";
 import type { Database as Adapter } from "./database";
+import { importLegacyIdentity } from "./legacy";
+
+/** The database file, relative to the app-config directory. */
+export const DATABASE_FILE = "openodds.db";
 
 /**
  * Production adapter. Backed by `tauri-plugin-sql` (sqlx/SQLite), which takes
  * `$1, $2, ...` placeholders — matching the SQL used across the app.
  */
 export async function openTauriDatabase(): Promise<Adapter> {
-  const db = await Database.load("sqlite:openodds.db");
+  // Before the load, not after: `Database.load` creates the file if it is not
+  // there, and the imported copy has to be in place before that happens.
+  await importLegacyIdentity(DATABASE_FILE);
+
+  const db = await Database.load(`sqlite:${DATABASE_FILE}`);
 
   // Deliberately no `transaction`: the plugin executes against a connection
   // pool, so a BEGIN and a later COMMIT need not land on the same connection
