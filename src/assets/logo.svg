@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="OpenOdds">
+  <!--
+    The standalone mark, used where CSS cannot reach: the browser favicon and
+    the desktop/installer icons, which are generated from this file with
+    `npm run tauri icon src/assets/logo.svg`.
+
+    Colours are baked rather than tokenised, because a file loaded through
+    <link rel="icon"> or read by the icon generator cannot see the app's custom
+    properties. The tile is the accent green the app uses in its dark theme, with
+    the rings in the dark ink that sits on it — high contrast on its own, so it
+    reads on a light browser tab strip and a dark one alike.
+
+    The tile is not decoration here. Two rings of one colour close up into a
+    single blob when this is drawn at 16px, and the tile is what holds them
+    apart: the darker green behind the rings keeps the gap between them visible
+    at the size a browser tab actually uses. That is also why 16px is inside the
+    file rather than a separate simplified mark — one shape, two scales.
+
+    The sidebar does *not* use this file: it draws the same two rings in
+    `currentColor` from `src/components/ui/Logo.tsx`, where they sit on the app's
+    own accent tile at its own radius and follow the theme. The geometry below
+    and the component are the same drawing — 1024 here as 32 there, and the
+    radii, centres, stroke and the trailing ring's opacity are all the same
+    numbers multiplied by 32.
+  -->
+  <rect width="1024" height="1024" rx="288" fill="#10b981" />
+  <circle
+    cx="313.6"
+    cy="691.2"
+    r="179.2"
+    fill="none"
+    stroke="#06281d"
+    stroke-width="102.4"
+    opacity="0.55"
+  />
+  <circle
+    cx="697.6"
+    cy="345.6"
+    r="179.2"
+    fill="none"
+    stroke="#06281d"
+    stroke-width="102.4"
+  />
+</svg>

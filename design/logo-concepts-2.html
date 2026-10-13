@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenOdds — logo concepts, round two</title>
+    <style>
+      /*
+       * A scratch page, not part of the app. Nine marks in the three directions
+       * that were asked for — thoroughbred, casino, and the double O — each shown
+       * at the sizes it will actually appear at, in both themes, and in the
+       * sidebar brand block at its real width.
+       *
+       * The marks are defined once in the MARKS array below and rendered from it,
+       * so a mark is edited in one place rather than once per size.
+       */
+      :root {
+        --canvas: #0d1117;
+        --panel: #141a22;
+        --raised: #1b232d;
+        --line: #46545f;
+        --edge: #66737f;
+        --ink: #eef2f6;
+        --muted: #a3b0bd;
+        --faint: #8b97a3;
+        --accent: #10b981;
+        --accent-ink: #06281d;
+      }
+      body.light {
+        --canvas: #f4f6f8;
+        --panel: #ffffff;
+        --raised: #f0f3f6;
+        --line: #b0bac4;
+        --edge: #828e9a;
+        --ink: #18212b;
+        --muted: #4a5665;
+        --faint: #5d6b7a;
+        --accent: #0f7a54;
+        --accent-ink: #ffffff;
+      }
+      body {
+        margin: 0;
+        padding: 32px 32px 64px;
+        background: var(--canvas);
+        color: var(--ink);
+        font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, sans-serif;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--faint);
+        margin: 34px 0 12px;
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+      }
+      .intro {
+        color: var(--muted);
+        max-width: 74ch;
+        margin: 0 0 4px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .card h3 {
+        margin: 0 0 4px;
+        font-size: 14px;
+      }
+      .card h3 code {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .card .note {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .card .verdict {
+        margin: 0 0 14px;
+        color: var(--faint);
+        font-size: 12px;
+      }
+      .sizes {
+        display: flex;
+        align-items: flex-end;
+        gap: 18px;
+        padding: 12px 0;
+        border-top: 1px solid var(--line);
+      }
+      .sizes figure {
+        margin: 0;
+        text-align: center;
+      }
+      .sizes figcaption {
+        font-size: 10px;
+        color: var(--faint);
+        margin-top: 6px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 216px;
+        margin-top: 12px;
+        padding: 8px;
+        border: 1px dashed var(--edge);
+        border-radius: 10px;
+      }
+      .brand .tile {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
+        border-radius: 8px;
+      }
+      .brand .tile.filled {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      .brand .tile.plain {
+        color: var(--accent);
+      }
+      .brand .name {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .brand .tag {
+        display: block;
+        font-size: 12px;
+        color: var(--faint);
+      }
+      .toggle {
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        border: 1px solid var(--edge);
+        background: var(--raised);
+        color: var(--ink);
+        border-radius: 8px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .tile-toggle {
+        margin-left: 6px;
+        border: 1px solid var(--edge);
+        background: var(--raised);
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 3px 9px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="toggle" onclick="document.body.classList.toggle('light')">
+      Toggle theme
+    </button>
+    <button class="tile-toggle" onclick="toggleTile()">
+      Filled / outline tile
+    </button>
+
+    <h1>OpenOdds — logo concepts, round two</h1>
+    <p class="intro">
+      Nine marks in the three directions you asked for. Each is shown at 16, 24,
+      32, 64 and 128px, then under a sidebar brand block at its real 216px width.
+      Judge at 16px first, then 32px — those are the two sizes that decide it.
+    </p>
+
+    <div id="groups"></div>
+
+    <h2>How to choose</h2>
+    <p class="intro">
+      Say the code — <code>T2</code>, <code>C2</code>, <code>D1</code> — and I will
+      wire it in everywhere: the sidebar, the favicon, and the Windows, macOS and
+      Linux icons, which are generated from the same SVG with one command. Note
+      which tile you wanted as well; the filled accent tile is what the app has
+      today, the outline version is on the toggle above.
+    </p>
+
+    <script>
+      const DIRECTION = {
+        thoroughbred: {
+          title: "Direction one · Thoroughbred",
+          blurb:
+            "Racing first. The risk is that it reads as a racing-only app, and the Sports screen ships AFL, NRL, soccer, cricket, tennis and basketball alongside it.",
+        },
+        casino: {
+          title: "Direction two · Casino",
+          blurb:
+            "Chance and chips. Broad enough to cover every code, and the most instantly recognisable as a gambling app — which cuts both ways if someone leaves the window open at work.",
+        },
+        doubleO: {
+          title: "Direction three · The double O",
+          blurb:
+            "The name itself, which is the only direction that still means OpenOdds if the app one day covers something else. Least characterful of the three.",
+        },
+      };
+
+      const MARKS = [
+        {
+          id: "T1",
+          direction: "thoroughbred",
+          name: "Horseshoe",
+          note: "The lucky horseshoe, opening upward so the luck does not run out.",
+          verdict:
+            "Reads clearly at every size. Its weakness is that a U with round ends is also just a U. (The first draft sat 7 units low in the tile, which a rasterised check of the ink's bounding box caught.)",
+          svg: `<path d="M6 11 A10 10 0 0 0 26 11" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>`,
+        },
+        {
+          id: "T2",
+          direction: "thoroughbred",
+          name: "Gallop",
+          note: "Four legs mid-stride, leaning the way the money is going.",
+          verdict:
+            "The strongest 16px of the racing marks, because it is three strokes and no detail. Honest caveat: at a glance it reads as growth bars, not legs.",
+          svg: `<path d="M6 25.5 L12 10.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><path d="M14.5 25.5 L19.5 6.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><path d="M23 25.5 L26 14.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>`,
+        },
+        {
+          id: "T3",
+          direction: "thoroughbred",
+          name: "Track and runner",
+          note: "The oval, with one runner breaking clear of the field.",
+          verdict:
+            "Distinctive and unmistakably racing, but two shapes at 16px, which is where it gets tight.",
+          svg: `<ellipse cx="15.5" cy="18.5" rx="10.5" ry="7" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="24.5" cy="9.5" r="2.8" fill="currentColor"/>`,
+        },
+        {
+          id: "C1",
+          direction: "casino",
+          name: "Die",
+          note: "A single die showing five — the odds, as a thing you roll.",
+          verdict:
+            "Instantly recognisable at 32px and still readable at 16px, where the pips pull in toward each other.",
+          svg: `<rect x="4.5" y="4.5" width="23" height="23" rx="6.5" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="11" cy="11" r="1.9" fill="currentColor"/><circle cx="21" cy="11" r="1.9" fill="currentColor"/><circle cx="16" cy="16" r="1.9" fill="currentColor"/><circle cx="11" cy="21" r="1.9" fill="currentColor"/><circle cx="21" cy="21" r="1.9" fill="currentColor"/>`,
+        },
+        {
+          id: "C2",
+          direction: "casino",
+          name: "Chip",
+          note: "A betting chip: spotted edge, solid centre.",
+          verdict:
+            "The best of the casino three at 16px, because the dashed edge survives as texture rather than vanishing.",
+          svg: `<circle cx="16" cy="16" r="11.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-dasharray="3.4 4.4"/><circle cx="16" cy="16" r="5.4" fill="none" stroke="currentColor" stroke-width="3"/>`,
+        },
+        {
+          id: "C3",
+          direction: "casino",
+          name: "Two cards",
+          note: "A fanned pair. Two overlapping shapes, which is the same idea as the double O.",
+          verdict:
+            "The only mark here that is not axis-aligned, and the one that needed drawing twice: as first fan them they overlapped almost completely and read as a single doughnut, which no amount of description would have told me. Pushed apart, the two cards are visible.",
+          svg: `<g transform="rotate(-17 13 15)"><rect x="7" y="6" width="12" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.8"/></g><g transform="rotate(17 19 17)"><rect x="13" y="8" width="12" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.8"/></g>`,
+        },
+        {
+          id: "D1",
+          direction: "doubleO",
+          name: "Interlocked O's",
+          note: "The badge the app has now, drawn properly: two rings, the second lighter.",
+          verdict:
+            "Very safe, and very close to a dozen other two-ring logos. Closes up at 16px.",
+          svg: `<circle cx="12.5" cy="16" r="7.2" fill="none" stroke="currentColor" stroke-width="3.2"/><circle cx="19.5" cy="16" r="7.2" fill="none" stroke="currentColor" stroke-width="3.2" opacity="0.55"/>`,
+        },
+        {
+          id: "D2",
+          direction: "doubleO",
+          name: "Stacked O's",
+          note: "The two O's stacked, which reads as a figure eight.",
+          verdict:
+            "Strongest silhouette of the three at 16px. The risk is that a figure eight also means infinity or a pool ball.",
+          svg: `<circle cx="16" cy="10.4" r="5.6" fill="none" stroke="currentColor" stroke-width="3.2"/><circle cx="16" cy="21.6" r="5.6" fill="none" stroke="currentColor" stroke-width="3.2" opacity="0.6"/>`,
+        },
+        {
+          id: "D3",
+          direction: "doubleO",
+          name: "Climbing O's",
+          note: "The two O's on a diagonal, the second higher than the first.",
+          verdict:
+            "Says profit and the name at once. At 16px the two rings merge into one blob, so it needs a generous minimum size.",
+          svg: `<circle cx="9.8" cy="21.6" r="5.6" fill="none" stroke="currentColor" stroke-width="3.2" opacity="0.55"/><circle cx="21.8" cy="10.8" r="5.6" fill="none" stroke="currentColor" stroke-width="3.2"/>`,
+        },
+      ];
+
+      const SIZES = [16, 24, 32, 64, 128];
+      let filledTile = true;
+
+      function mark(inner, size) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true">${inner}</svg>`;
+      }
+
+      function tile(inner, size) {
+        return filledTile
+          ? `<span class="tile filled">${mark(inner, size)}</span>`
+          : `<span class="tile plain">${mark(inner, size)}</span>`;
+      }
+
+      function render() {
+        const order = ["thoroughbred", "casino", "doubleO"];
+        document.getElementById("groups").innerHTML = order
+          .map((key) => {
+            const marks = MARKS.filter((m) => m.direction === key);
+            return `
+              <h2>${DIRECTION[key].title}</h2>
+              <p class="intro">${DIRECTION[key].blurb}</p>
+              <div class="grid" style="margin-top:12px">
+                ${marks.map(card).join("")}
+              </div>`;
+          })
+          .join("");
+      }
+
+      function card(m) {
+        return `
+          <div class="card">
+            <h3><code>${m.id}</code> · ${m.name}</h3>
+            <p class="note">${m.note}</p>
+            <p class="verdict">${m.verdict}</p>
+            <div class="sizes">
+              ${SIZES.map((s) => `<figure>${mark(m.svg, s)}<figcaption>${s}</figcaption></figure>`).join("")}
+            </div>
+            <div class="brand">
+              ${tile(m.svg, 32)}
+              <span>
+                <span class="name">OpenOdds</span>
+                <span class="tag">Always free</span>
+              </span>
+            </div>
+          </div>`;
+      }
+
+      function toggleTile() {
+        filledTile = !filledTile;
+        render();
+      }
+
+      render();
+    </script>
+  </body>
+</html>

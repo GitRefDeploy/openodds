@@ -3,6 +3,7 @@ import { useAppData } from "./DataProvider";
 import { LegacyImportBanner } from "./LegacyImportBanner";
 import { ThemeToggle } from "./ThemeProvider";
 import { AppVersion } from "@/components/ui/AppVersion";
+import { Logo } from "@/components/ui/Logo";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
@@ -74,14 +75,19 @@ export function App() {
     <div className="flex h-full">
       <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
         <div className="flex items-center gap-2.5 px-4 py-5">
-          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-xs font-bold text-accent-ink">
-            OO
+          {/*
+           * The mark, on the tile the initials used to sit on. `size-8` on the
+           * svg as well as the tile, because the artwork carries its own inset —
+           * rendering it smaller than its box would shrink the rings twice.
+           */}
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-ink">
+            <Logo className="size-8" />
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold tracking-tight text-ink">
               OpenOdds
             </span>
-            <span className="block text-xs text-faint">Local · open source</span>
+            <span className="block text-xs text-faint">Always free</span>
           </span>
         </div>
 
@@ -121,8 +127,8 @@ export function App() {
         </nav>
 
         <div className="border-t border-line px-3 py-3">
-          <ThemeToggle />
-          <p className="px-1 pt-2 text-xs text-faint">
+          <ThemeToggle variant="compact" />
+          <p className="mt-2 px-1 text-xs text-faint">
             <AppVersion />
           </p>
         </div>
