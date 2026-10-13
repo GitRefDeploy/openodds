@@ -16,7 +16,9 @@ constraints in mind for any change.
    with", "assisted by" or similar trailers for an assistant, agent, tool, bot or
    service — in commit messages or pull request descriptions. Whoever writes a
    change, the commit names the person accountable for it. Credit for anything
-   else is added deliberately by the maintainer, never by default.
+   else is added deliberately by the maintainer, never by default. CI checks both
+   the commits a push adds and the pull request description, and fails the build
+   rather than leaving it to review.
 
 ## Development
 
@@ -26,6 +28,7 @@ npm run tauri:dev   # desktop app with hot reload
 npm run dev         # browser-only UI preview (sql.js backing store)
 npm test            # domain unit tests
 npm run typecheck
+scripts/check-credit.sh commits HEAD   # the rule above, over a whole history
 ```
 
 ## Where things live

@@ -108,3 +108,50 @@ jobs:
       # enabled only in CI releases.
       - name: Build the desktop app (no bundle)
         run: npm run tauri -- build --no-bundle ${{ matrix.targetArg }}
+
+  # Ground rule 5 in CONTRIBUTING.md says a commit credits only the person
+  # accountable for it. A rule with no check behind it is a preference, and the
+  # failure mode is silent: the trailer is only visible to someone who opens the
+  # commit, and after a release it cannot be removed from the tags at all.
+  credit:
+    name: No agent credit in commits or pull requests
+    runs-on: ubuntu-22.04
+    # Overrides the workflow's read-only default: a pull request's description is
+    # read with the pull-requests scope, not the contents one.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Every message is read out of the repository, so the history has to be
+          # present rather than the single commit a default checkout gets.
+          fetch-depth: 0
+
+      - name: Check the commit messages
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          # On a push, GitHub reports the tip the branch pointed at beforehand,
+          # which keeps this to the commits the push adds. A first push or one
+          # that replaced history can leave that commit unreachable, and then the
+          # whole history is scanned instead — which for a repository this size
+          # costs nothing and means no push can carry credit forward unnoticed.
+          if [ -n "${BEFORE:-}" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            range="${BEFORE}..HEAD"
+          else
+            range="HEAD"
+          fi
+          scripts/check-credit.sh commits "${range}"
+
+      - name: Check the pull request description
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq .body > "${RUNNER_TEMP}/pr-body.md"
+          scripts/check-credit.sh text "${RUNNER_TEMP}/pr-body.md"
