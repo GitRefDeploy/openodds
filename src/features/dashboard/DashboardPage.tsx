@@ -1,17 +1,6 @@
 import { useMemo } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useAppData } from "@/app/DataProvider";
+import { CategoryBarChart, TimeSeriesChart } from "@/components/ui/charts";
 import {
   Badge,
   Button,
@@ -19,7 +8,7 @@ import {
   PageHeader,
   Stat,
 } from "@/components/ui/primitives";
-import { formatMoney, formatSignedMoney, toMajor } from "@/domain/money";
+import { formatMoney, formatSignedMoney } from "@/domain/money";
 import {
   byBook,
   bySport,
@@ -201,54 +190,18 @@ export function DashboardPage({
             }
           />
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart
-              data={curve.map((p) => ({
-                date: p.date,
-                profit: toMajor(p.cumulativeCents),
-              }))}
-            >
-              <defs>
-                <linearGradient id="plFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--positive)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="var(--positive)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              {/*
-               * One tick per *date*, not one per bet. The curve has a point for
-               * every settled bet, so two bets that settled the same day put the
-               * same label on the axis twice: this chart really did print
-               * `2026-03-24` on two neighbouring ticks. `allowDuplicatedCategory`
-               * is the library's answer — the domain becomes the distinct dates,
-               * and the points that share one are drawn at that date's position
-               * rather than being dropped.
-               */}
-              <XAxis
-                dataKey="date"
-                stroke="var(--muted)"
-                fontSize={11}
-                allowDuplicatedCategory={false}
-              />
-              <YAxis stroke="var(--muted)" fontSize={11} width={64} />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--raised)",
-                  border: "1px solid var(--line)",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-                formatter={(value: number) => [money(Math.round(value * 100)), "Profit"]}
-              />
-              <Area
-                type="monotone"
-                dataKey="profit"
-                stroke="var(--positive)"
-                fill="url(#plFill)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <TimeSeriesChart
+            points={curve.map((p) => ({
+              date: p.date,
+              cents: p.cumulativeCents,
+            }))}
+            color="var(--positive)"
+            gradientId="plFill"
+            seriesLabel="Profit"
+            height={260}
+            fillOpacity={0.5}
+            format={money}
+          />
         )}
       </Card>
 
@@ -396,6 +349,11 @@ function ChartPlaceholder({
   );
 }
 
+/**
+ * A total per category, in a card with its own empty state. The bars themselves
+ * are `CategoryBarChart`, with the axes every other chart shares; this supplies
+ * the heading, and what to say when there is nothing to draw yet.
+ */
 function BreakdownChart({
   title,
   groups,
@@ -413,46 +371,15 @@ function BreakdownChart({
       {groups.length === 0 ? (
         <ChartPlaceholder message={emptyMessage} />
       ) : (
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart
-            data={groups.map((g) => ({
-              label: g.label,
-              profit: toMajor(g.profitCents),
-            }))}
-            layout="vertical"
-            margin={{ left: 20 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-            <XAxis type="number" stroke="var(--muted)" fontSize={11} />
-            <YAxis
-              type="category"
-              dataKey="label"
-              stroke="var(--muted)"
-              fontSize={11}
-              width={110}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "var(--raised)",
-                border: "1px solid var(--line)",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-              formatter={(value: number) => [
-                formatSignedMoney(Math.round(value * 100), currency),
-                "Profit",
-              ]}
-            />
-            <Bar dataKey="profit" radius={[0, 4, 4, 0]}>
-              {groups.map((g) => (
-                <Cell
-                  key={g.key}
-                  fill={g.profitCents >= 0 ? "var(--positive)" : "var(--negative)"}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <CategoryBarChart
+          rows={groups.map((group) => ({
+            key: group.key,
+            label: group.label,
+            cents: group.profitCents,
+          }))}
+          seriesLabel="Profit"
+          format={(cents) => formatSignedMoney(cents, currency)}
+        />
       )}
     </Card>
   );

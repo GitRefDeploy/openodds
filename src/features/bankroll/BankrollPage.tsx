@@ -1,14 +1,6 @@
 import { useMemo, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useAppData } from "@/app/DataProvider";
+import { TimeSeriesChart } from "@/components/ui/charts";
 import {
   Badge,
   Button,
@@ -28,12 +20,7 @@ import {
   TRANSACTION_TYPES,
   type TransactionType,
 } from "@/domain/bankroll";
-import {
-  formatMoney,
-  formatSignedMoney,
-  toCents,
-  toMajor,
-} from "@/domain/money";
+import { formatMoney, formatSignedMoney, toCents } from "@/domain/money";
 import { enrichAll } from "@/features/analytics/selectors";
 import { formatDate, todayISO } from "@/lib/utils";
 
@@ -88,9 +75,11 @@ export function BankrollPage() {
     }
     events.sort((a, b) => a.date.localeCompare(b.date));
     let running = 0;
+    // A point per day, holding the balance that day in cents, like every other
+    // money figure in the app: the chart converts for the axis, not the page.
     return events.map((e) => {
       running += e.delta;
-      return { date: e.date, balance: toMajor(running) };
+      return { date: e.date, cents: running };
     });
   }, [transactions, enriched]);
 
@@ -160,49 +149,13 @@ export function BankrollPage() {
             No transactions or settled bets yet.
           </p>
         ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={curve}>
-              <defs>
-                <linearGradient id="bankFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--info)" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="var(--info)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-              {/*
-               * As on the dashboard: this curve has one point per cash movement
-               * *and* per settled bet, so a day with both put the same date on
-               * the axis twice. `allowDuplicatedCategory` keeps one tick per
-               * distinct date without dropping the points behind it.
-               */}
-              <XAxis
-                dataKey="date"
-                stroke="var(--muted)"
-                fontSize={11}
-                allowDuplicatedCategory={false}
-              />
-              <YAxis stroke="var(--muted)" fontSize={11} width={64} />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--raised)",
-                  border: "1px solid var(--line)",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-                formatter={(value: number) => [
-                  money(Math.round(value * 100)),
-                  "Balance",
-                ]}
-              />
-              <Area
-                type="monotone"
-                dataKey="balance"
-                stroke="var(--info)"
-                fill="url(#bankFill)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <TimeSeriesChart
+            points={curve}
+            color="var(--info)"
+            gradientId="bankFill"
+            seriesLabel="Balance"
+            format={money}
+          />
         )}
       </Card>
 
