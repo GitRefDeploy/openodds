@@ -28,8 +28,14 @@ npm run tauri:dev   # desktop app with hot reload
 npm run dev         # browser-only UI preview (sql.js backing store)
 npm test            # domain unit tests
 npm run typecheck
+npm run lint
 scripts/check-credit.sh commits HEAD   # the rule above, over a whole history
 ```
+
+The end-to-end suite drives the packaged desktop app and needs a build and a
+WebDriver first — see [e2e/README.md](e2e/README.md). It checks the one thing no
+other test can: what an install updating from before the rename sees. CI runs it
+on Linux.
 
 ## Where things live
 

@@ -120,6 +120,28 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
+      # The end-to-end suite drives the packaged app, so it needs the platform's
+      # WebDriver and a display to launch it into. Linux only: Windows would need
+      # an msedgedriver matching whatever WebView2 the runner has, and the import
+      # this suite exists to check has no platform-specific branch to cover.
+      - name: Install the WebDriver and a display
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get install -y webkit2gtk-driver xvfb
+          cargo install tauri-driver --locked
+
+      - name: Install end-to-end dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        working-directory: e2e
+        run: npm ci
+
+      # It launches the app itself, out of the release build this job has just
+      # made, and in a data root of its own — see e2e/README.md.
+      - name: End-to-end test the packaged app
+        if: matrix.platform == 'ubuntu-22.04'
+        working-directory: e2e
+        run: xvfb-run -a npm test
+
   # Ground rule 5 in CONTRIBUTING.md says a commit credits only the person
   # accountable for it. A rule with no check behind it is a preference, and the
   # failure mode is silent: the trailer is only visible to someone who opens the

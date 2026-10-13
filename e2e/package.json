@@ -1,0 +1,18 @@
+{
+  "name": "openodds-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests that launch the packaged desktop app and drive it.",
+  "scripts": {
+    "test": "node ./reset-data-root.mjs && npm run seed && node ./simulate-previous-install.mjs && npm run verify",
+    "seed": "wdio run ./wdio.conf.js --spec ./test/specs/seed.spec.js",
+    "verify": "wdio run ./wdio.conf.js --spec ./test/specs/verify.spec.js"
+  },
+  "devDependencies": {
+    "@wdio/cli": "^9.19.0",
+    "@wdio/globals": "^9.19.0",
+    "@wdio/local-runner": "^9.19.0",
+    "@wdio/mocha-framework": "^9.19.0",
+    "@wdio/spec-reporter": "^9.19.0"
+  }
+}
