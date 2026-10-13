@@ -278,8 +278,7 @@ function ChecklistCard({
         <div>
           <h2 className="text-sm font-semibold text-ink">Get set up</h2>
           <p className="mt-0.5 text-xs text-muted">
-            {progress.completed} of {progress.total} done. Each step is ticked
-            when the app can see it, not when you say so.
+            {progress.completed} of {progress.total} done.
           </p>
         </div>
         <div className="flex items-center gap-2">

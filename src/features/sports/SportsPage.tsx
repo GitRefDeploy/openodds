@@ -62,9 +62,9 @@ export function SportsPage() {
                   return (
                     <Card
                       key={sport.id}
-                      className="flex items-center justify-between gap-3 py-3"
+                      className="flex h-full items-center justify-between gap-3 py-3"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p
                             className={
@@ -85,9 +85,17 @@ export function SportsPage() {
                             : "No settled bets"}
                         </p>
                       </div>
+                      {/*
+                       * A fixed width, so the toggles line up down the grid.
+                       * Out of the box "Hide" and "Enable" are different widths
+                       * and the buttons sit at different left edges on every
+                       * other card, which is most of what made this page look
+                       * ragged.
+                       */}
                       <Button
                         size="sm"
                         variant={enabled ? "ghost" : "default"}
+                        className="w-[4.5rem] shrink-0"
                         onClick={async () => {
                           await repo.setSportEnabled(sport.id, !enabled);
                           await refresh();
@@ -113,14 +121,23 @@ export function SportsPage() {
               placeholder="e.g. Darts"
             />
           </Field>
+          {/*
+           * The same labels the page's own headings use, read from one place.
+           * Hard-coding them here is how this form came to offer "Team sport"
+           * while the heading above it had already been corrected to "Team
+           * sports" — the two disagreeing is invisible until someone goes
+           * looking for the group they just created.
+           */}
           <Field label="Group">
             <Select
               value={kind}
               onChange={(e) => setKind(e.target.value as SportKind)}
             >
-              <option value="racing">Racing</option>
-              <option value="team">Team sport</option>
-              <option value="other">Other</option>
+              {groups.map((group) => (
+                <option key={group} value={group}>
+                  {SPORT_KIND_LABELS[group]}
+                </option>
+              ))}
             </Select>
           </Field>
           <div className="flex justify-end gap-2">

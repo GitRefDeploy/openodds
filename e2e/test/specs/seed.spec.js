@@ -1,7 +1,9 @@
+import { expect } from "@wdio/globals";
 import {
   clickButton,
   clickNav,
   setField,
+  sidebarGeometry,
   waitForDomText,
   waitForText,
 } from "../helpers.js";
@@ -35,7 +37,20 @@ describe("a fresh install", () => {
     await clickButton("Finish setup");
 
     // The wizard is replaced by the app itself once setup is recorded.
-    await waitForText("Local · open source");
+    await waitForText("Always free");
+  });
+
+  it("keeps everything in the sidebar inside the sidebar", async () => {
+    // The theme control sits in a fixed-width column and overflows it unless it
+    // is rendered without its icons: three buttons carrying an icon, a gap and a
+    // label each need ~240px, and the column offers 216. jsdom cannot see this —
+    // there is no layout in it — so the assertion lives here, in a real engine.
+    const { width, escapees } = await sidebarGeometry();
+
+    expect(
+      escapees.join("\n"),
+      `the sidebar is ${width}px wide and something inside it did not fit`,
+    ).toBe("");
   });
 
   it("records a bet through the import screen", async () => {

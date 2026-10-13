@@ -16,6 +16,21 @@
  * Profit and loss have their own two colours. Blue and pink are not among them:
  * on an exchange those mean back and lay, which is a different question from
  * whether a bet won, and conflating the two would make both unreadable.
+ *
+ * Two rules hold the greys together, and `src/config/contrast.test.ts` enforces
+ * both, because a palette drifts one "just slightly dimmer" tweak at a time:
+ *
+ * - `faint` is still text, so it clears 4.5:1 against every surface it can land
+ *   on — including `raised` and `neutral-soft`, the two it was previously
+ *   failing on in both themes. `muted` sits a visible step above it rather than
+ *   collapsing into it: meeting that floor pushed `faint` up towards `muted` in
+ *   dark and down towards it in light, so `muted` moved with it to keep the two
+ *   tiers distinguishable.
+ * - `line` draws decoration (card borders, table hairlines, dividers) and is
+ *   allowed to be quiet. `edge` draws the boundary of something you can
+ *   operate, and clears 3:1 against both the surface behind it and the fill
+ *   inside it. They are separate tokens because a divider may be a whisper but
+ *   a text field's edge is the only thing saying it is a field.
  */
 :root {
   color-scheme: dark;
@@ -24,11 +39,12 @@
   --panel: #141a22;
   --raised: #1b232d;
   --hover: #222c37;
-  --line: #26303c;
+  --line: #46545f;
+  --edge: #66737f;
 
   --ink: #eef2f6;
-  --muted: #9aa7b4;
-  --faint: #6b7784;
+  --muted: #a3b0bd;
+  --faint: #8b97a3;
 
   --accent: #10b981;
   --accent-strong: #34d399;
@@ -54,11 +70,12 @@
   --panel: #ffffff;
   --raised: #f0f3f6;
   --hover: #e7ecf1;
-  --line: #d6dde4;
+  --line: #b0bac4;
+  --edge: #828e9a;
 
   --ink: #18212b;
-  --muted: #5d6b7a;
-  --faint: #8592a0;
+  --muted: #4a5665;
+  --faint: #5d6b7a;
 
   --accent: #0f7a54;
   --accent-strong: #0b6244;
@@ -66,11 +83,11 @@
 
   --positive: #137a50;
   --positive-soft: #e2f2ea;
-  --negative: #c43d4b;
+  --negative: #bd3644;
   --negative-soft: #fbe7e9;
   --warning: #8a6414;
   --warning-soft: #f8f1dc;
-  --info: #1f6feb;
+  --info: #1a62d6;
   --info-soft: #e3edfb;
   --promo: #6d3fd1;
   --promo-soft: #eee7fb;
@@ -83,6 +100,7 @@
   --color-raised: var(--raised);
   --color-hover: var(--hover);
   --color-line: var(--line);
+  --color-edge: var(--edge);
 
   --color-ink: var(--ink);
   --color-muted: var(--muted);

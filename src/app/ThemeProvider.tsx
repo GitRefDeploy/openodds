@@ -90,15 +90,37 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({
+  className,
+  variant = "full",
+}: {
+  className?: string;
+  /**
+   * `full` shows an icon beside each label; `compact` drops the icon and tightens
+   * the padding so the control fits a narrow column.
+   *
+   * The sidebar needs the compact one, and not because of taste. Three buttons
+   * carrying an icon, a gap and a label each measure 73–76px, and flex items will
+   * not shrink below their own content, so the row wanted ~240px inside the
+   * sidebar's 216px content box — and, since the overflow was visible on both
+   * the group and the footer, the extra painted *outside* the sidebar and under
+   * the main pane. The labels are what make the control usable; the icons were
+   * the ~45px that could go. The group's `aria-label` and each button's
+   * `aria-pressed` already say everything the icons did, and Settings keeps the
+   * full control where there is room for it.
+   */
+  variant?: "full" | "compact";
+}) {
   const { preference, setPreference } = useTheme();
+  const compact = variant === "compact";
 
   return (
     <div
       role="group"
       aria-label="Colour theme"
       className={cn(
-        "flex items-center gap-1 rounded-lg border border-line bg-raised p-1",
+        "flex items-center gap-1 rounded-lg border border-edge bg-raised p-1",
+        compact && "w-full gap-0.5",
         className,
       )}
     >
@@ -111,13 +133,14 @@ export function ThemeToggle({ className }: { className?: string }) {
             aria-pressed={active}
             onClick={() => setPreference(option)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
+              "flex flex-1 items-center justify-center rounded-md text-xs transition-colors",
+              compact ? "gap-1 px-1.5 py-1" : "gap-1.5 px-2 py-1",
               active
                 ? "bg-accent text-accent-ink"
                 : "text-muted hover:bg-hover hover:text-ink",
             )}
           >
-            <Icon name={THEME_ICONS[option]} size={14} />
+            {!compact && <Icon name={THEME_ICONS[option]} size={14} />}
             {THEME_PREFERENCE_LABELS[option]}
           </button>
         );

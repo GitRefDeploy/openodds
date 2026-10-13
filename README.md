@@ -77,9 +77,19 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
   cannot be applied to half the app. Follow the operating system or pin it;
   "System" is live, so a machine that switches at sunset takes the app with it.
   Profit and loss keep their own colours, deliberately *not* blue and pink — on an
-  exchange those mean back and lay, which is a different question.
-- **Sports categorisation** - Thoroughbred, harness and greyhound racing, soccer, AFL,
+  exchange those mean back and lay, which is a different question. Every text
+  pairing clears **WCAG AA against every surface it can be drawn on**, and
+  anything you can operate has its own `edge` colour at 3:1, kept separate from
+  the quieter `line` used for decoration — a divider may whisper, a text field's
+  edge may not. That floor is enforced by `src/config/contrast.test.ts`, which
+  reads the tokens out of `src/index.css` so it cannot drift from them.
+- **Sports categorisation** - Thoroughbred, harness and greyhound, soccer, AFL,
   NRL, cricket, tennis and more to be added. Enable what you use, add your own.
+  Codes are named in Title Case with no brackets, and the group heading carries
+  the word they share — the *Racing* group holds *Thoroughbred*, *Harness* and
+  *Greyhound*. A name is stored on its row rather than looked up, so migration 8
+  renames the codes an earlier version shipped; it is guarded by the exact string
+  it replaces, so a code you renamed yourself is left alone.
 - **Market prices from a real bookmaker feed** (optional) — Add a free The Odds
   API key and any bet's row gains a **Market** panel: pick a sport, pick the
   event, and see what every AU book is showing for *h2h*, with your own price
@@ -298,9 +308,17 @@ draft it is supposed to verify and reports "release not found" on every release.
 fetched by an installed app, which has no GitHub account, and GitHub answers
 **404** for a private repository — indistinguishable, from the app's side, from a
 release that does not exist. An installed copy reports that as "the feed answered
-404". Settings → Updates has a **Test the feed** button that shows exactly what
-the app sees, and a field for a read-only token when the feed has to stay
-private.
+404".
+
+Settings → Updates deliberately offers only **Check for updates** and the version
+it is running: a Settings screen is read far more often than a feed breaks, and a
+token field for a case almost nobody hits is noise on it. The two things that can
+tell that failure apart — a probe that reports exactly what the app's own request
+received, and a read-only token field for a feed that cannot be made public —
+still exist, unrendered, in
+[`src/features/settings/UpdateDiagnostics.tsx`](src/features/settings/UpdateDiagnostics.tsx),
+which says how to put them back in one line. `src/config/updater.test.ts` covers
+the probe directly, so that path is still tested.
 
 **The version has to go up.** The updater only installs a manifest whose version
 is greater than the running build, so a release that reuses an already-installed

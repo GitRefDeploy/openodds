@@ -143,3 +143,38 @@ describe("bringing the setup checklist back", () => {
     ).toBeTruthy();
   });
 });
+
+describe("the update card", () => {
+  /*
+   * What is left on the card after the feed diagnostic was taken off it. The
+   * probe and the token field still exist in `UpdateDiagnostics.tsx` — they are
+   * the only way to tell a 404 feed from a release that does not exist — but the
+   * card is read far more often than the feed breaks, so they are not rendered.
+   * If someone puts them back, this test is the record of the decision.
+   */
+  it("still offers the one thing you can do about an update", () => {
+    renderSettings();
+
+    expect(
+      screen.getByRole("button", { name: /check for updates/i }),
+    ).toBeTruthy();
+  });
+
+  it("does not put the feed probe on the screen", () => {
+    renderSettings();
+
+    expect(screen.queryByRole("button", { name: /test the feed/i })).toBeNull();
+  });
+
+  it("does not ask for a private feed token", () => {
+    renderSettings();
+
+    expect(screen.queryByText(/private feed token/i)).toBeNull();
+  });
+
+  it("does not print the manifest URL it reads", () => {
+    renderSettings();
+
+    expect(screen.queryByText(/latest\.json/)).toBeNull();
+  });
+});

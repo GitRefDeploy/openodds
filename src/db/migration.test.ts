@@ -443,3 +443,116 @@ describe("market quotes", () => {
     expect(await appliedVersion(db)).toBe(LATEST);
   });
 });
+
+describe("the sport name correction", () => {
+  /**
+   * The exact strings a database seeded before the rename holds.
+   *
+   * Written out rather than read from `DEFAULT_SPORTS`, deliberately: the point
+   * of the migration is to recognise the *old* names, so reading them from the
+   * taxonomy would make this test agree with whatever the taxonomy happens to
+   * say and prove nothing at all. If these strings are ever updated to match a
+   * new default, the migration they guard has stopped working.
+   */
+  const SHIPPED_NAMES: readonly (readonly [string, string])[] = [
+    ["thoroughbred", "Horse racing (thoroughbred)"],
+    ["harness", "Harness racing"],
+    ["greyhound", "Greyhound racing"],
+    ["american_football", "American football"],
+  ];
+
+  async function addSport(
+    db: Database,
+    slug: string,
+    name: string,
+    kind: string,
+    sortOrder: number,
+  ): Promise<void> {
+    await db.execute(
+      `INSERT INTO sports (slug, name, kind, enabled, sort_order)
+       VALUES ($1, $2, $3, 1, $4)`,
+      [slug, name, kind, sortOrder],
+    );
+  }
+
+  async function namesBySlug(db: Database): Promise<Record<string, string>> {
+    const rows = await db.select<{ slug: string; name: string }>(
+      `SELECT slug, name FROM sports`,
+    );
+    return Object.fromEntries(rows.map((row) => [row.slug, row.name]));
+  }
+
+  it("renames the codes the app shipped, in a database that already has them", async () => {
+    // A name is stored on the row, not looked up from the taxonomy, so without
+    // this every existing install would keep the old capitalisation forever.
+    const db = await openAt(7);
+    let order = 0;
+    for (const [slug, name] of SHIPPED_NAMES) {
+      await addSport(db, slug, name, "racing", order++);
+    }
+
+    await migrate(db);
+
+    expect(await namesBySlug(db)).toMatchObject({
+      thoroughbred: "Thoroughbred",
+      harness: "Harness",
+      greyhound: "Greyhound",
+      american_football: "American Football",
+    });
+    expect(await appliedVersion(db)).toBe(LATEST);
+  });
+
+  it("leaves a code the user renamed themselves exactly as it was", async () => {
+    // The guard is the whole reason this is a correction rather than an
+    // overwrite: a rename someone typed is their data, not a stale default.
+    const db = await openAt(7);
+    await addSport(db, "thoroughbred", "Saturday gallops", "racing", 0);
+    await addSport(db, "harness", "Harness racing", "racing", 1);
+
+    await migrate(db);
+
+    // The one they renamed is untouched; the one they did not is corrected, so
+    // the migration cannot be "skip everything" and still pass this test.
+    expect(await namesBySlug(db)).toMatchObject({
+      thoroughbred: "Saturday gallops",
+      harness: "Harness",
+    });
+  });
+
+  it("keeps a bet attached to the code it was recorded against", async () => {
+    // A bet points at its sport by row id, so a migration that re-created the
+    // rows instead of updating them in place would leave every racing bet
+    // attached to nothing — and the Bets screen would quietly lose a filter.
+    const db = await openAt(7);
+    await addSport(db, "harness", "Harness racing", "racing", 0);
+    const sportRows = await db.select<{ id: number }>(
+      `SELECT id FROM sports WHERE slug = 'harness'`,
+    );
+    const bookId = await addBook(db, "TAB");
+    const betId = await addLegacyBet(db, bookId, "Melton R4", 2000);
+    await db.execute(`UPDATE bets SET sport_id = $1 WHERE id = $2`, [
+      sportRows[0].id,
+      betId,
+    ]);
+
+    await migrate(db);
+
+    const joined = await db.select<{ sport_slug: string; sport_name: string }>(
+      `SELECT s.slug AS sport_slug, s.name AS sport_name
+         FROM bets b JOIN sports s ON s.id = b.sport_id
+        WHERE b.id = $1`,
+      [betId],
+    );
+    expect(joined).toEqual([{ sport_slug: "harness", sport_name: "Harness" }]);
+  });
+
+  it("leaves a custom code alone", async () => {
+    const db = await openAt(7);
+    await addSport(db, "darts", "Darts", "other", 0);
+
+    await migrate(db);
+
+    expect(await namesBySlug(db)).toEqual({ darts: "Darts" });
+  });
+});
+

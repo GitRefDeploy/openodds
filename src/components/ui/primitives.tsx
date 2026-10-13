@@ -15,6 +15,11 @@ import { cn } from "@/lib/utils";
  * rather than palette steps, which is what lets one set of components serve both
  * themes: nothing below picks a shade of grey, so nothing below has to know
  * which theme is on.
+ *
+ * Anything you can operate is edged in `edge` rather than `line`. They are
+ * different tokens on purpose: `line` is decoration and may be quiet, but the
+ * boundary of a control is the only thing telling you it is one, so it has to
+ * clear 3:1. See the comment at the top of `src/index.css`.
  */
 
 export function Button({
@@ -34,11 +39,11 @@ export function Button({
         variant === "primary" &&
           "bg-accent text-accent-ink hover:bg-accent-strong",
         variant === "default" &&
-          "border border-line bg-raised text-ink hover:bg-hover",
+          "border border-edge bg-raised text-ink hover:bg-hover",
         variant === "ghost" &&
           "bg-transparent text-muted hover:bg-hover hover:text-ink",
         variant === "danger" &&
-          "border border-line bg-negative-soft text-negative hover:border-negative",
+          "border border-edge bg-negative-soft text-negative hover:border-negative",
         className,
       )}
       {...props}
@@ -180,7 +185,7 @@ export function Input({
   return (
     <input
       className={cn(
-        "w-full rounded-lg border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none",
+        "w-full rounded-lg border border-edge bg-raised px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none",
         className,
       )}
       {...props}
@@ -195,7 +200,7 @@ export function Textarea({
   return (
     <textarea
       className={cn(
-        "w-full rounded-lg border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none",
+        "w-full rounded-lg border border-edge bg-raised px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none",
         className,
       )}
       {...props}
@@ -211,7 +216,7 @@ export function Select({
   return (
     <select
       className={cn(
-        "w-full rounded-lg border border-line bg-raised px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none",
+        "w-full rounded-lg border border-edge bg-raised px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none",
         className,
       )}
       {...props}
@@ -306,7 +311,7 @@ export function SegmentedControl<T extends string>({
       role="group"
       aria-label={label}
       className={cn(
-        "inline-flex items-center gap-1 rounded-lg border border-line bg-raised p-1",
+        "inline-flex items-center gap-1 rounded-lg border border-edge bg-raised p-1",
         className,
       )}
     >
@@ -357,7 +362,7 @@ export function FilterChip({
         "rounded-full border px-3 py-1 text-xs transition-colors",
         active
           ? "border-accent bg-accent/15 text-ink"
-          : "border-line text-muted hover:border-faint hover:text-ink",
+          : "border-edge text-muted hover:border-faint hover:text-ink",
       )}
     >
       {children}
@@ -433,7 +438,14 @@ export function PageHeader({
 }) {
   return (
     <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
+      {/*
+       * `flex-1` on the text column, `shrink-0` on the actions. Without the
+       * first, a long description claims its whole max width and the actions are
+       * pushed onto a line of their own — a button floating above the content it
+       * belongs to, which is what made the Sports page read as broken at a
+       * 960px window. The text now wraps inside the space that is left instead.
+       */}
+      <div className="min-w-0 flex-1">
         <h1 className="text-xl font-semibold tracking-tight text-ink">
           {title}
         </h1>
@@ -441,7 +453,7 @@ export function PageHeader({
           <p className="mt-1 max-w-3xl text-sm text-muted">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex gap-2">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}
     </header>
   );
 }

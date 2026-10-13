@@ -102,14 +102,14 @@ describe("the list itself", () => {
     render(<SportsPage />);
 
     expect(screen.getByText("Racing")).toBeTruthy();
-    expect(screen.getByText("Team sport")).toBeTruthy();
+    expect(screen.getByText("Team sports")).toBeTruthy();
   });
 
   it("leaves out a group with nothing in it rather than showing an empty heading", () => {
     render(<SportsPage />);
 
     expect(screen.getByText("Racing")).toBeTruthy();
-    expect(screen.queryByText("Team sport")).toBeNull();
+    expect(screen.queryByText("Team sports")).toBeNull();
   });
 
   it("shows a hidden code as hidden instead of removing it", () => {

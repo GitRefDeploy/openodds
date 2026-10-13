@@ -24,13 +24,11 @@ import {
 import { ThemeToggle } from "@/app/ThemeProvider";
 import { AppVersion } from "@/components/ui/AppVersion";
 import { getAppInfo } from "@/config/appInfo";
-import {
-  UPDATE_FEED_TOKEN_KEY,
-  UPDATE_FEED_URL,
-  checkAndInstallUpdate,
-  inspectUpdateFeed,
-  type UpdateProgress,
-} from "@/config/updater";
+import { checkAndInstallUpdate, type UpdateProgress } from "@/config/updater";
+
+// The feed probe, the private-feed token and the "Test the feed" button used to
+// live on the Updates card. They now sit unrendered in `UpdateDiagnostics.tsx`,
+// which explains what they are for and how to put them back.
 
 const CURRENCIES = ["AUD", "NZD", "USD", "GBP", "EUR"];
 
@@ -104,10 +102,6 @@ export function SettingsPage() {
               </label>
             </Field>
           </div>
-          <p className="mt-3 text-xs text-faint">
-            Odds are always stored as decimals internally. Changing this only
-            affects how they are displayed and entered.
-          </p>
         </Card>
 
         <UpdatesCard />
@@ -147,9 +141,7 @@ export function SettingsPage() {
 function UpdatesCard() {
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
   const [progress, setProgress] = useState<UpdateProgress | null>(null);
-  const [feedMessage, setFeedMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     getAppInfo().then((info) => setCurrentVersion(info.version));
@@ -186,13 +178,6 @@ function UpdatesCard() {
         </Badge>
       </div>
 
-      <p className="text-sm text-muted">
-        Installed copies check the signed manifest below. That URL has to be
-        readable without credentials, so a repository that is private is enough
-        on its own to stop every update.
-      </p>
-      <p className="mt-1 text-xs break-all text-faint">{UPDATE_FEED_URL}</p>
-
       {label ? (
         <p
           className={
@@ -204,110 +189,20 @@ function UpdatesCard() {
         </p>
       ) : null}
 
-      {feedMessage ? (
-        <p className="mt-3 rounded-lg border border-line bg-raised p-3 text-xs leading-relaxed text-ink">
-          {feedMessage}
-        </p>
-      ) : null}
-
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
           variant="default"
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            setFeedMessage(null);
             await checkAndInstallUpdate(setProgress);
             setBusy(false);
           }}
         >
           Check for updates
         </Button>
-        {/* Runs in the browser preview too, which is what makes it possible to
-            see the same answer the installed app would get. */}
-        <Button
-          variant="ghost"
-          disabled={testing || currentVersion === null}
-          onClick={async () => {
-            setTesting(true);
-            setFeedMessage(null);
-            const report = await inspectUpdateFeed(currentVersion ?? "0.0.0");
-            setFeedMessage(report.message);
-            setTesting(false);
-          }}
-        >
-          {testing ? "Testing…" : "Test the feed"}
-        </Button>
       </div>
-
-      <FeedTokenRow />
     </Card>
-  );
-}
-
-/**
- * A read-only token, for the case where the feed cannot be made public.
- *
- * Kept here rather than folded into the integrations list because it is not a
- * data source: it exists only so the updater can prove it is allowed to read a
- * manifest, and it is only ever sent when one has been stored.
- */
-function FeedTokenRow() {
-  const [configured, setConfigured] = useState(false);
-  const [value, setValue] = useState("");
-
-  useEffect(() => {
-    hasSecret(UPDATE_FEED_TOKEN_KEY).then(setConfigured);
-  }, []);
-
-  return (
-    <div className="mt-4 rounded-lg border border-line p-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-ink">
-          Private feed token
-        </p>
-        {configured ? (
-          <Badge tone="positive">Configured</Badge>
-        ) : (
-          <Badge tone="neutral">Not configured</Badge>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-faint">
-        Only needed if the release repository is not public. Public feeds need
-        no token, and none is sent unless one is stored here. Stored in the OS
-        keychain, never in the repository.
-      </p>
-      <div className="mt-2 flex gap-2">
-        <Input
-          type="password"
-          value={value}
-          placeholder={configured ? "••••••••" : "Paste a read-only token"}
-          onChange={(e) => setValue(e.target.value)}
-        />
-        <Button
-          variant="default"
-          disabled={!value.trim()}
-          onClick={async () => {
-            await saveSecret(UPDATE_FEED_TOKEN_KEY, value.trim());
-            setValue("");
-            setConfigured(true);
-          }}
-        >
-          Save
-        </Button>
-        {configured && (
-          <Button
-            variant="ghost"
-            onClick={async () => {
-              await deleteSecret(UPDATE_FEED_TOKEN_KEY);
-              setConfigured(false);
-            }}
-          >
-            Remove
-          </Button>
-        )}
-      </div>
-    </div>
   );
 }
 

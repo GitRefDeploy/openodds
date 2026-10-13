@@ -125,3 +125,43 @@ export async function clickNav(label) {
 export async function clickButton(label) {
   await $(`//button[normalize-space()="${label}"]`).click();
 }
+
+/**
+ * What the sidebar contains that it should not, and where it ends.
+ *
+ * The sidebar is a fixed-width column and the theme control at its foot was
+ * measured 11px past its right edge — painted underneath the main pane, so the
+ * end of "Light" was simply not on screen. No unit test can catch that: jsdom
+ * has no layout engine, so nothing in a DOM-only test can tell you a box is too
+ * wide. This asks the real engine, which is the only place the answer exists.
+ */
+export async function sidebarGeometry() {
+  return browser.execute(() => {
+    const sidebar = document.querySelector("aside");
+    if (!sidebar) throw new Error("no sidebar on the page");
+
+    const bounds = sidebar.getBoundingClientRect();
+    const escapees = [];
+
+    for (const element of sidebar.querySelectorAll("*")) {
+      const rect = element.getBoundingClientRect();
+      // A collapsed element has no box to judge, and zero-width boxes overlap
+      // their neighbours' edges by rounding alone.
+      if (rect.width === 0 || rect.height === 0) continue;
+      if (rect.right > bounds.right + 0.5 || rect.left < bounds.left - 0.5) {
+        const name = element.getAttribute("class")?.split(/\s+/)[0];
+        escapees.push(
+          `${element.tagName.toLowerCase()}${name ? `.${name}` : ""} spans ` +
+            `${rect.left.toFixed(1)}..${rect.right.toFixed(1)}, ` +
+            `but the sidebar is ${bounds.left.toFixed(1)}..${bounds.right.toFixed(1)}`,
+        );
+      }
+    }
+
+    return {
+      width: bounds.width,
+      right: bounds.right,
+      escapees,
+    };
+  });
+}

@@ -1,14 +1,19 @@
 # End-to-end tests
 
-These launch the **packaged desktop app** and drive it through WebDriver. There is
-one thing they exist to check, and it is the one thing no other test can: what
-happens to someone who is updating from the version before the app was renamed.
+These launch the **packaged desktop app** and drive it through WebDriver. They
+exist for the things no other test can check: what happens to someone updating
+from the version before the app was renamed, and whether the layout actually fits
+— jsdom has no layout engine, so a box that is 11px too wide is invisible to every
+unit test in the repository and obvious to anyone looking at the window.
 
 The suite is two runs of the app with deliberate surgery in between:
 
 1. **Seed** — a fresh install goes through its setup wizard and records a bet
    through its own import screen, so the data is real data the app produced
-   rather than a fixture this test built to its own idea of the schema.
+   rather than a fixture this test built to its own idea of the schema. It also
+   measures the sidebar here: every element inside it has to end inside it, which
+   is what caught the theme control overflowing the column and painting under the
+   main pane.
 2. **Simulate the previous install** — the database is moved to the directory
    named after the identity the app had before the rename, and this identity's
    directory is deleted. The old identity is exactly what an install that has not

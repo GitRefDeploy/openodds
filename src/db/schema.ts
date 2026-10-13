@@ -233,6 +233,24 @@ CREATE TABLE IF NOT EXISTS odds_api_calls (
 );
 `,
   },
+  {
+    version: 8,
+    // A sport's name is stored on its row, not looked up from the taxonomy by
+    // slug, so correcting `DEFAULT_SPORTS` reaches a fresh install and nobody
+    // else — anyone already running the app keeps the name that was seeded into
+    // their database when they first started it. This is what reaches them.
+    //
+    // Each statement is guarded by the exact string it replaces, so a sport that
+    // has been renamed by hand is left alone: the guard is what makes this a
+    // correction rather than an overwrite. Slugs are untouched, so nothing that
+    // references a sport by slug — bets, imports, filters — is affected.
+    sql: `
+UPDATE sports SET name = 'Thoroughbred'      WHERE slug = 'thoroughbred'      AND name = 'Horse racing (thoroughbred)';
+UPDATE sports SET name = 'Harness'           WHERE slug = 'harness'           AND name = 'Harness racing';
+UPDATE sports SET name = 'Greyhound'         WHERE slug = 'greyhound'         AND name = 'Greyhound racing';
+UPDATE sports SET name = 'American Football' WHERE slug = 'american_football' AND name = 'American football';
+`,
+  },
 ];
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
