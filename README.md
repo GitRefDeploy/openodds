@@ -230,9 +230,17 @@ manifest that installed apps poll. A final job then checks that every installer,
 its signature and every manifest entry really landed, so a release that only
 half-published fails loudly instead of looking green.
 
-The release is created as a **draft**: review the assets, then publish it. The
-updater endpoint resolves `releases/latest`, which ignores drafts, so installed
-apps will not see a new version until you publish.
+The release stays a **draft** until that final job has passed, and it is the job
+that publishes it — the checks are a gate, not a report. The updater endpoint
+resolves `releases/latest`, which ignores drafts, so this ordering is exactly
+what keeps a half-built release invisible: nothing is downloadable, and no
+installed app is offered an update, until every check has passed. If a check
+fails, the release stays a draft for you to inspect and the run is red.
+
+That job reads the release with write access rather than read, which looks like
+more privilege than it needs. It is not optional: GitHub's release API hides
+**draft** releases from read-only tokens, so a read-only check cannot see the
+draft it is supposed to verify and reports "release not found" on every release.
 
 **The repository has to be readable without credentials.** The manifest is
 fetched by an installed app, which has no GitHub account, and GitHub answers

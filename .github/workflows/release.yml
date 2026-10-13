@@ -4,6 +4,10 @@ name: Release
 # Windows x64, Windows x86 (32-bit) and Linux, attaches them to a GitHub
 # Release, and publishes the signed `latest.json` updater manifest that
 # installed apps poll.
+#
+# The release is staged as a draft and published by the verify job at the end,
+# so it only becomes public once every installer and manifest entry has been
+# checked. No human step is needed to finish a release off.
 on:
   push:
     tags:
@@ -125,6 +129,10 @@ jobs:
             These builds are not code-signed, so Windows SmartScreen will warn
             about an unknown publisher. Choose **More info → Run anyway** to
             continue.
+          # Staged as a draft on purpose: the verify job below checks the
+          # installers and the manifest, and then publishes the release. A
+          # release therefore cannot go public unverified, and a release whose
+          # checks fail stays a draft for someone to look at.
           releaseDraft: true
           prerelease: false
           # Signed updater artifacts are enabled only here, so a local
@@ -145,12 +153,21 @@ jobs:
   # that the manifest describes all three architectures. A green build that
   # shipped an incomplete manifest would otherwise go unnoticed until someone's
   # app failed to update.
+  #
+  # This job is also what publishes the release: everything above stages it as
+  # a draft, and the last step here takes it out of draft once — and only once —
+  # the checks have passed. The checks are a gate, not a report.
   verify:
-    name: Verify published installers and manifest
+    name: Verify the installers and manifest, then publish
     needs: publish
     runs-on: ubuntu-22.04
+    # Write, not read — and not because this job writes anything before its last
+    # step. GitHub's release API omits *draft* releases from read-only tokens, so
+    # with `read` this job cannot see the very release it exists to check and
+    # fails with "release not found" on every run, however good the release is.
+    # Narrowing this back to `read` reintroduces that failure.
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Check every installer and the manifest are present
         env:
@@ -208,3 +225,23 @@ jobs:
 
           [ "$fail" -eq 0 ] || { echo "Release verification failed."; exit 1; }
           echo "All release checks passed."
+
+      # A failed step aborts the job, so arriving here means every check above
+      # passed. Publishing from the workflow rather than leaving it to a person
+      # is what stops a verified release from sitting invisible because nobody
+      # remembered to click anything.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" != "true" ]; then
+            echo "$TAG was already published; nothing to do."
+            exit 0
+          fi
+
+          gh release edit "$TAG" --repo "$REPO" --draft=false
+          echo "Published $TAG — installed apps will now be offered it."
