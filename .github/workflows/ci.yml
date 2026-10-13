@@ -109,6 +109,17 @@ jobs:
       - name: Build the desktop app (no bundle)
         run: npm run tauri -- build --no-bundle ${{ matrix.targetArg }}
 
+      # The legacy import is the only Rust that runs before anything else the app
+      # loads, and its failure modes are the expensive ones: a database copied
+      # without its write-ahead log, or a copy that overwrites data already here.
+      # It cannot be reached from a frontend test, because the files live outside
+      # the webview, so it is tested where it lives. Linux only — the logic has no
+      # platform-specific branches, and this job already installs the system
+      # libraries a test binary has to link against.
+      - name: Test the Rust shell
+        if: matrix.platform == 'ubuntu-22.04'
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
   # Ground rule 5 in CONTRIBUTING.md says a commit credits only the person
   # accountable for it. A rule with no check behind it is a preference, and the
   # failure mode is silent: the trailer is only visible to someone who opens the

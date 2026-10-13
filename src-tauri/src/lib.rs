@@ -85,13 +85,59 @@ fn legacy_database_paths(app: &tauri::AppHandle) -> Vec<PathBuf> {
         .collect()
 }
 
-/// Copy an older install's database into place, if there is one to copy and this
-/// install has no database of its own yet.
+/// Copy a database file, and the write-ahead log and shared-memory files SQLite
+/// keeps beside it, onto `target`.
 ///
-/// Nothing is deleted or moved: the old file stays exactly where it was, so an
-/// older version keeps working and a failed copy can simply be retried. The
-/// target is never overwritten, which is also what makes running this more than
-/// once harmless.
+/// The companions matter: with a write-ahead log in use, the main file alone can
+/// be missing the newest writes. Any failure removes the copy again — a database
+/// that is missing its log is worse than no copy, and leaving one behind would
+/// stop a retry from ever running, because the target would exist by then.
+fn copy_database(source: &Path, target: &Path) -> Result<(), String> {
+    let directory = target
+        .parent()
+        .ok_or_else(|| format!("no directory for {}", target.display()))?;
+    std::fs::create_dir_all(directory).map_err(|e| e.to_string())?;
+    std::fs::copy(source, target).map_err(|e| e.to_string())?;
+
+    for suffix in ["-wal", "-shm"] {
+        let from = with_suffix(source, suffix);
+        if !from.exists() {
+            continue;
+        }
+        if let Err(error) = std::fs::copy(&from, with_suffix(target, suffix)) {
+            let _ = std::fs::remove_file(target);
+            for suffix in ["-wal", "-shm"] {
+                let _ = std::fs::remove_file(with_suffix(target, suffix));
+            }
+            return Err(error.to_string());
+        }
+    }
+
+    Ok(())
+}
+
+/// Bring the first candidate database that exists onto `target`, unless this
+/// install already has one.
+///
+/// Nothing is deleted or moved, so an older version keeps working and a failed
+/// copy can simply be retried, and the target is never overwritten, which is also
+/// what makes running this more than once harmless.
+fn import_into(target: &Path, candidates: &[PathBuf]) -> Result<Option<String>, String> {
+    if target.exists() {
+        return Ok(None);
+    }
+
+    let source = match candidates.iter().find(|path| path.exists()) {
+        Some(path) => path,
+        None => return Ok(None),
+    };
+
+    copy_database(source, target)?;
+    Ok(Some(source.display().to_string()))
+}
+
+/// Where this install's own database goes, and where an older install's one may
+/// be found.
 fn import_legacy_database(app: &tauri::AppHandle, file: &str) -> Result<Option<String>, String> {
     let target = app
         .path()
@@ -99,41 +145,7 @@ fn import_legacy_database(app: &tauri::AppHandle, file: &str) -> Result<Option<S
         .map_err(|e| e.to_string())?
         .join(file);
 
-    if target.exists() {
-        return Ok(None);
-    }
-
-    let source = match legacy_database_paths(app).into_iter().find(|path| path.exists()) {
-        Some(path) => path,
-        None => return Ok(None),
-    };
-
-    let directory = target
-        .parent()
-        .ok_or_else(|| format!("no directory for {}", target.display()))?;
-    std::fs::create_dir_all(directory).map_err(|e| e.to_string())?;
-    std::fs::copy(&source, &target).map_err(|e| e.to_string())?;
-
-    // SQLite keeps recent writes in a write-ahead log beside the database, so a
-    // copy of the main file alone can be missing the newest bets. The companions
-    // are copied when they exist, and any failure removes the copy again: a
-    // partly copied database that is missing its log is worse than no copy, and
-    // leaving it behind would stop a retry from ever running.
-    for suffix in ["-wal", "-shm"] {
-        let from = with_suffix(&source, suffix);
-        if !from.exists() {
-            continue;
-        }
-        if let Err(error) = std::fs::copy(&from, with_suffix(&target, suffix)) {
-            let _ = std::fs::remove_file(&target);
-            for suffix in ["-wal", "-shm"] {
-                let _ = std::fs::remove_file(with_suffix(&target, suffix));
-            }
-            return Err(error.to_string());
-        }
-    }
-
-    Ok(Some(source.display().to_string()))
+    import_into(&target, &legacy_database_paths(app))
 }
 
 /// Move API keys out of the old credential-store service.
@@ -215,4 +227,115 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A directory of its own that cleans up after itself, including when a test
+    /// fails and unwinds.
+    struct Scratch(PathBuf);
+
+    impl Scratch {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir().join(format!(
+                "openodds-import-test-{}-{}",
+                name,
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).expect("a scratch directory");
+            Scratch(dir)
+        }
+
+        fn file(&self, name: &str) -> PathBuf {
+            self.0.join(name)
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn copies_the_first_candidate_that_exists() {
+        let scratch = Scratch::new("candidates");
+        let missing = scratch.file("io.github.bet-tracker.app/bet-tracker.db");
+        let present = scratch.file("elsewhere/bet-tracker.db");
+        std::fs::create_dir_all(present.parent().unwrap()).unwrap();
+        std::fs::write(&present, b"bets").unwrap();
+        let target = scratch.file("own/openodds.db");
+
+        let copied = import_into(&target, &[missing, present.clone()]).unwrap();
+
+        assert_eq!(copied, Some(present.display().to_string()));
+        assert_eq!(std::fs::read(&target).unwrap(), b"bets");
+    }
+
+    #[test]
+    fn copies_the_write_ahead_log_beside_the_database() {
+        let scratch = Scratch::new("wal");
+        let source = scratch.file("old/bet-tracker.db");
+        std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+        std::fs::write(&source, b"bets").unwrap();
+        std::fs::write(with_suffix(&source, "-wal"), b"newest bet").unwrap();
+        let target = scratch.file("own/openodds.db");
+
+        import_into(&target, &[source]).unwrap();
+
+        assert_eq!(std::fs::read(&target).unwrap(), b"bets");
+        assert_eq!(
+            std::fs::read(with_suffix(&target, "-wal")).unwrap(),
+            b"newest bet"
+        );
+    }
+
+    #[test]
+    fn never_overwrites_a_database_this_install_already_has() {
+        let scratch = Scratch::new("existing");
+        let source = scratch.file("old/bet-tracker.db");
+        std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+        std::fs::write(&source, b"old bets").unwrap();
+        let target = scratch.file("own/openodds.db");
+        std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+        std::fs::write(&target, b"this install's bets").unwrap();
+
+        let copied = import_into(&target, &[source]).unwrap();
+
+        assert_eq!(copied, None);
+        assert_eq!(std::fs::read(&target).unwrap(), b"this install's bets");
+    }
+
+    #[test]
+    fn a_machine_with_no_older_install_is_left_alone() {
+        let scratch = Scratch::new("fresh");
+        let target = scratch.file("own/openodds.db");
+
+        assert_eq!(import_into(&target, &[scratch.file("old/bet-tracker.db")]), Ok(None));
+        assert!(!target.exists());
+    }
+
+    #[test]
+    fn leaves_no_half_copy_behind_when_the_log_cannot_be_written() {
+        let scratch = Scratch::new("halfcopy");
+        let source = scratch.file("old/bet-tracker.db");
+        std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+        std::fs::write(&source, b"bets").unwrap();
+        std::fs::write(with_suffix(&source, "-wal"), b"newest bet").unwrap();
+        let target = scratch.file("own/openodds.db");
+        std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+        // A directory where the log has to go: copying a file onto it fails.
+        std::fs::create_dir(with_suffix(&target, "-wal")).unwrap();
+
+        let copied = import_into(&target, &[source]);
+
+        assert!(copied.is_err(), "a copy that cannot complete must report failure");
+        assert!(
+            !target.exists(),
+            "the database must not be left behind without its log"
+        );
+    }
 }
