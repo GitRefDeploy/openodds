@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,5 +81,31 @@ export const config = {
 
   afterSession() {
     driver?.kill();
+  },
+
+  /**
+   * Keep what the app was showing when a test failed.
+   *
+   * This suite only ever runs where nobody can watch it, so a failure that says
+   * "the app never showed X" is a dead end: the screen is the only place the
+   * answer is, and the session is gone by the time anyone reads the log. The page
+   * source and a screenshot go into `e2e/artifacts/`, which CI uploads.
+   */
+  async afterTest(test, _context, { error }) {
+    if (!error) return;
+
+    const directory = path.resolve(here, "artifacts");
+    const name = test.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    try {
+      fs.mkdirSync(directory, { recursive: true });
+      fs.writeFileSync(
+        path.join(directory, `${name}.html`),
+        await browser.getPageSource(),
+      );
+      await browser.saveScreenshot(path.join(directory, `${name}.png`));
+      console.log(`saved ${name}.html and ${name}.png to ${directory}`);
+    } catch (artifactsError) {
+      console.log(`could not save artifacts: ${artifactsError.message}`);
+    }
   },
 };

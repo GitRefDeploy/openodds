@@ -58,12 +58,15 @@ export default tseslint.config(
   {
     // The end-to-end suite drives the packaged app through WebdriverIO, whose
     // specs are given `browser`, `$` and the rest by the test runner rather than
-    // by an import, and whose hooks are Mocha's.
+    // by an import, and whose hooks are Mocha's. The browser globals are here for
+    // the callbacks handed to `browser.execute`, which are serialised and run in
+    // the page rather than in the file that defines them.
     files: ["e2e/**/*.{js,mjs}"],
     languageOptions: {
       globals: {
         ...globals.node,
         ...globals.mocha,
+        ...globals.browser,
         browser: "readonly",
         $: "readonly",
         $$: "readonly",

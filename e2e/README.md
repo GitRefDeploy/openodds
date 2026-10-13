@@ -35,6 +35,12 @@ a matching `msedgedriver` and is not set up here — the suite runs on Linux onl
 Point `OPENODDS_BINARY` at another build if you want to test one that is not in
 `src-tauri/target/release`.
 
+## When it fails
+
+A failing test writes the page source and a screenshot to `e2e/artifacts/`, and CI
+uploads them with the run. The suite only ever runs where nobody is watching, so
+"the app never showed X" without the screen it was on is a dead end.
+
 ## It does not touch your install
 
 The app is launched with `XDG_CONFIG_HOME` and `XDG_DATA_HOME` set to a temporary
