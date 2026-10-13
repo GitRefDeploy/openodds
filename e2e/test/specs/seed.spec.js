@@ -2,6 +2,7 @@ import {
   clickButton,
   clickNav,
   setField,
+  waitForDomText,
   waitForText,
 } from "../helpers.js";
 
@@ -47,7 +48,9 @@ describe("a fresh install", () => {
     await clickButton("Import 1 bet");
     await waitForText("Imported 1 bet.");
 
+    // The row is found in the DOM rather than in the element text, because the
+    // description is drawn in a label that WebKit's text command leaves out.
     await clickNav("Bets");
-    await waitForText(DESCRIPTION);
+    await waitForDomText(DESCRIPTION);
   });
 });

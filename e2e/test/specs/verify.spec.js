@@ -1,4 +1,4 @@
-import { bodyText, clickNav, waitForText } from "../helpers.js";
+import { bodyText, clickNav, waitForDomText, waitForText } from "../helpers.js";
 
 /**
  * Second run: this install has no database of its own, and the only copy of one
@@ -24,7 +24,9 @@ describe("after an update from the previous identity", () => {
   });
 
   it("shows the bet the earlier copy was holding", async () => {
+    // The description is in a label WebKit's text command leaves out, so this
+    // asks the DOM — see helpers.js.
     await clickNav("Bets");
-    await waitForText(DESCRIPTION);
+    await waitForDomText(DESCRIPTION);
   });
 });

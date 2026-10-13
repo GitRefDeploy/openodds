@@ -46,6 +46,47 @@ export async function bodyText() {
 }
 
 /**
+ * The page's text as the DOM holds it, rather than as the element-text command
+ * reports it.
+ *
+ * WebKit leaves out anything inside a `truncate` span — this app's way of writing
+ * a label that may be clipped — and the bet's description is exactly that kind of
+ * label, so "the bet is on the screen" cannot be asked with `getText()`. The
+ * first run of this suite proved it the hard way: the row was in the DOM, the
+ * screen text simply did not mention it.
+ */
+export async function domText(selector = "body") {
+  return browser.execute(
+    (sel) => document.querySelector(sel)?.textContent ?? "",
+    selector,
+  );
+}
+
+/** Wait for something the element-text command would not report. */
+export async function waitForDomText(needle, timeout = 30000) {
+  let text = "";
+  try {
+    await browser.waitUntil(
+      async () => {
+        text = await domText();
+        return text.includes(needle);
+      },
+      {
+        timeout,
+        interval: 250,
+        timeoutMsg: `the page never contained "${needle}"`,
+      },
+    );
+  } catch (error) {
+    throw new Error(
+      `${error.message}\nthe page held:\n${text.slice(0, SCREEN_LIMIT)}`,
+      { cause: error },
+    );
+  }
+  return text;
+}
+
+/**
  * Put text into a field the way React will notice.
  *
  * WebdriverIO's own `setValue` types the text through the WebDriver, and on
