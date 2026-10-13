@@ -2,7 +2,7 @@ import initSqlJs, { type Database as SqlJsDatabase } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { toPositional, type Database } from "./database";
 
-const STORAGE_KEY = "bet-tracker.db";
+const STORAGE_KEY = "openodds.db";
 
 function loadPersisted(): Uint8Array | undefined {
   try {

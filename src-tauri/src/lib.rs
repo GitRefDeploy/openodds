@@ -1,4 +1,5 @@
 use serde::Serialize;
+use tauri::Manager;
 
 /// Store a credential in the platform-native secret store.
 ///
@@ -36,11 +37,20 @@ struct AppInfo {
     name: String,
 }
 
+/// The name comes from `tauri.conf.json` rather than from the crate's package
+/// name. They are different strings — the package is `openodds`, the app is
+/// OpenOdds — so reading the configured product name keeps the label in step with
+/// the window title and the installer instead of drifting from them. The crate
+/// name stays as a fallback for a build with no product name set.
 #[tauri::command]
-fn app_info() -> AppInfo {
+fn app_info(app: tauri::AppHandle) -> AppInfo {
     AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
-        name: env!("CARGO_PKG_NAME").to_string(),
+        name: app
+            .config()
+            .product_name
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_NAME").to_string()),
     }
 }
 

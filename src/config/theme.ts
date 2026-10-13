@@ -28,7 +28,7 @@ export const THEME_PREFERENCE_LABELS: Record<ThemePreference, string> = {
  * which is what stops the app painting in one theme and correcting itself a
  * frame later.
  */
-export const THEME_STORAGE_KEY = "bet-tracker.theme";
+export const THEME_STORAGE_KEY = "openodds.theme";
 
 export function isThemePreference(
   value: string | null | undefined,

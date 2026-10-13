@@ -29,5 +29,5 @@ export async function getAppInfo(): Promise<AppInfo> {
       // over a version label.
     }
   }
-  return { version: __APP_VERSION__, name: "Bet Tracker" };
+  return { version: __APP_VERSION__, name: "OpenOdds" };
 }

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bet Tracker</title>
+    <title>OpenOdds</title>
     <script>
       // Paint in the right theme before the app boots. The preference lives in
       // the database, which is read asynchronously, so painting from there would
@@ -12,7 +12,7 @@
       (function () {
         var preference = "system";
         try {
-          preference = localStorage.getItem("bet-tracker.theme") || "system";
+          preference = localStorage.getItem("openodds.theme") || "system";
         } catch (error) {
           /* storage unavailable: fall back to the system preference */
         }

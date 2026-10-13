@@ -1,6 +1,6 @@
 {
-  "name": "bet-tracker",
-  "version": "0.1.1",
+  "name": "openodds",
+  "version": "0.2.0",
   "private": true,
   "description": "Local-first, open-source betting P/L, promo and bankroll tracker.",
   "license": "MIT",

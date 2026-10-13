@@ -123,7 +123,7 @@ export function SettingsPage() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `bet-tracker-export-${new Date()
+            a.download = `openodds-export-${new Date()
               .toISOString()
               .slice(0, 10)}.json`;
             a.click();
@@ -134,7 +134,7 @@ export function SettingsPage() {
         <Card>
           <h2 className="mb-2 text-sm font-semibold text-ink">About</h2>
           <p className="text-sm text-muted">
-            Bet Tracker <AppVersion /> · MIT licensed. Runs entirely on your
+            OpenOdds <AppVersion /> · MIT licensed. Runs entirely on your
             machine — there is no server, no account and no telemetry. All API
             keys are optional and entered by you.
           </p>

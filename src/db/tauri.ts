@@ -6,7 +6,7 @@ import type { Database as Adapter } from "./database";
  * `$1, $2, ...` placeholders — matching the SQL used across the app.
  */
 export async function openTauriDatabase(): Promise<Adapter> {
-  const db = await Database.load("sqlite:bet-tracker.db");
+  const db = await Database.load("sqlite:openodds.db");
 
   // Deliberately no `transaction`: the plugin executes against a connection
   // pool, so a BEGIN and a later COMMIT need not land on the same connection

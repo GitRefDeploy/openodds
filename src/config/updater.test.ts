@@ -167,13 +167,13 @@ describe("diagnoseFeed when this app's own request was refused", () => {
 
   it("notices a public release that is missing the manifest asset", () => {
     const report = diagnoseFeed(
-      refusedProbe(api({ assets: ["Bet.Tracker_0.1.0_x64-setup.exe"] })),
+      refusedProbe(api({ assets: ["OpenOdds_0.1.0_x64-setup.exe"] })),
       context,
     );
     expect(report.state).toBe("missing");
     expect(report.message).toContain("latest.json");
     expect(report.message).toContain("v0.1.0");
-    expect(report.message).toContain("Bet.Tracker_0.1.0_x64-setup.exe");
+    expect(report.message).toContain("OpenOdds_0.1.0_x64-setup.exe");
   });
 
   it("says the release is empty when it carries no assets", () => {
@@ -284,7 +284,7 @@ describe("probeUpdateFeed", () => {
     });
     expect(calls).toHaveLength(2);
     expect(calls[1]).toBe(
-      "https://api.github.com/repos/GitRefDeploy/bet-tracker/releases/latest",
+      "https://api.github.com/repos/GitRefDeploy/openodds/releases/latest",
     );
   });
 

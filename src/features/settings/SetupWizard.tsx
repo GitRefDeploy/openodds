@@ -38,7 +38,7 @@ export function SetupWizard() {
         {step === 0 && (
           <div className="space-y-4">
             <h1 className="text-xl font-semibold text-ink">
-              Welcome to Bet Tracker
+              Welcome to OpenOdds
             </h1>
             <p className="text-sm text-muted">
               A local-first tracker for betting profit and loss, promos and

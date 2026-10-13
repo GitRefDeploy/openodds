@@ -115,16 +115,16 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
-          releaseName: "Bet Tracker v__VERSION__"
+          releaseName: "OpenOdds v__VERSION__"
           releaseBody: |
             Download the file for your machine:
 
-            - **Windows 64-bit** — `Bet.Tracker_*_x64-setup.exe` (recommended)
+            - **Windows 64-bit** — `OpenOdds_*_x64-setup.exe` (recommended)
               or the `.msi` if you prefer a traditional installer.
-            - **Windows 32-bit** — `Bet.Tracker_*_x86-setup.exe`.
+            - **Windows 32-bit** — `OpenOdds_*_x86-setup.exe`.
             - **Linux, Debian/Ubuntu** — the `.deb`.
             - **Linux, everything else** — the `.AppImage`. Make it executable
-              first: `chmod +x Bet.Tracker*.AppImage`
+              first: `chmod +x OpenOdds*.AppImage`
 
             These builds are not code-signed, so Windows SmartScreen will warn
             about an unknown publisher. Choose **More info → Run anyway** to

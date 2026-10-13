@@ -18,7 +18,7 @@ import { getSecret } from "./secrets";
  * would send someone looking in the wrong place.
  */
 export const UPDATE_FEED_URL =
-  "https://github.com/GitRefDeploy/bet-tracker/releases/latest/download/latest.json";
+  "https://github.com/GitRefDeploy/openodds/releases/latest/download/latest.json";
 
 /** Keychain account for a read-only token, for a feed that is not public. */
 export const UPDATE_FEED_TOKEN_KEY = "update-feed-token";

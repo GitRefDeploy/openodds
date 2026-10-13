@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    bet_tracker_lib::run()
+    openodds_lib::run()
 }

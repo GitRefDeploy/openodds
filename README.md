@@ -1,4 +1,4 @@
-# Bet Tracker
+# OpenOdds
 
 A local, open-source desktop app for tracking **betting profit and loss,
 promotional offers and bankroll**. Everything is stored in a SQLite file on your
@@ -106,25 +106,53 @@ Built with [Tauri v2](https://v2.tauri.app/) + [React](https://react.dev/) + [Ty
 ### Download and install
 
 Prebuilt installers are on the
-[releases page](https://github.com/GitRefDeploy/bet-tracker/releases/latest)
+[releases page](https://github.com/GitRefDeploy/openodds/releases/latest)
 
 | Operating System | Download |
 | --- | --- |
-| Windows 64-bit (almost everyone) | `Bet.Tracker_*_x64-setup.exe` |
-| Windows 32-bit | `Bet.Tracker_*_x86-setup.exe` |
-| Also Windows (Preference)| `Bet.Tracker_*_x64_en-US.msi` |
-| Debian, Ubuntu, Mint | `Bet.Tracker_*_amd64.deb` |
-| Any other Linux OS | `Bet.Tracker_*_amd64.AppImage` |
+| Windows 64-bit (almost everyone) | `OpenOdds_*_x64-setup.exe` |
+| Windows 32-bit | `OpenOdds_*_x86-setup.exe` |
+| Also Windows (Preference)| `OpenOdds_*_x64_en-US.msi` |
+| Debian, Ubuntu, Mint | `OpenOdds_*_amd64.deb` |
+| Any other Linux OS | `OpenOdds_*_amd64.AppImage` |
 
 An AppImage needs its executable bit set before it will run:
 
 ```bash
-chmod +x Bet.Tracker*.AppImage
-./Bet.Tracker*.AppImage
+chmod +x OpenOdds*.AppImage
+./OpenOdds*.AppImage
 ```
 
 > **These builds are not code-signed.** Windows will likely show a SmartScreen warning
 > about an unknown publisher — choose **More info → Run anyway**.
+
+### Coming from Bet Tracker (v0.1.x)
+
+The app was renamed in v0.2.0: Bet Tracker is now **OpenOdds**, and its identity
+changed with the name. There is one consequence worth knowing before you upgrade —
+**this installs alongside an older copy rather than replacing it.** To your OS these
+are different applications, so OpenOdds starts with an empty database and the old
+copy is left exactly as it is.
+
+Your bets are not lost, and they do not need re-entering. The old copy keeps them in
+a SQLite file named after its own identity:
+
+| OS | The old copy's database |
+| --- | --- |
+| Windows | `%APPDATA%\io.github.bet-tracker.app\bet-tracker.db` |
+| Linux | the same file under `io.github.bet-tracker.app/` in your app config directory — `~/.config/…`, or `$XDG_CONFIG_HOME` if you set it |
+
+To bring them across: start OpenOdds once and quit it, so its own directory exists,
+then copy that file into `io.github.openodds.app/` as `openodds.db`. The schema did
+not change, so it opens as-is. Settings also has an export that writes everything to
+a JSON file, if you would rather keep a snapshot first.
+
+Two things deliberately do not carry across, because they belong to the old
+identity: the optional API keys, which live in the OS credential store under the old
+name, and the theme preference. Both take a moment to set again in Settings.
+
+The old version can then be uninstalled — they are separate applications, so
+removing one leaves the other alone.
 
 ### Prerequisites
 
@@ -258,13 +286,13 @@ version is ignored — deliberately, and not reported as an error. Bump
 Two things are needed for releases:
 
 1. **The updater endpoint is already configured** to
-   `https://github.com/GitRefDeploy/bet-tracker/releases/latest/download/latest.json`
+   `https://github.com/GitRefDeploy/openodds/releases/latest/download/latest.json`
    in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json). If you fork this
    project, change it to your own owner and repository name.
 2. **Add the signing secrets.** Generate a keypair once:
 
    ```bash
-   npm run tauri signer generate -w ~/.tauri/bet-tracker-updater.key
+   npm run tauri signer generate -w ~/.tauri/openodds-updater.key
    ```
 
    - Put the **public** key (the `.pub` file contents) into

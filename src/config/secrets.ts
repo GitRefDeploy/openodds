@@ -6,8 +6,8 @@
  */
 import { isTauriRuntime } from "./runtime";
 
-const SERVICE = "bet-tracker";
-const BROWSER_PREFIX = "bet-tracker.secret.";
+const SERVICE = "openodds";
+const BROWSER_PREFIX = "openodds.secret.";
 
 export function secretStorageKind(): "keychain" | "browser" {
   return isTauriRuntime() ? "keychain" : "browser";

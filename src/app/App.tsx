@@ -74,11 +74,11 @@ export function App() {
       <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
         <div className="flex items-center gap-2.5 px-4 py-5">
           <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-xs font-bold text-accent-ink">
-            BT
+            OO
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold tracking-tight text-ink">
-              Bet Tracker
+              OpenOdds
             </span>
             <span className="block text-xs text-faint">Local · open source</span>
           </span>

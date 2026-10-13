@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Bet Tracker",
-  "version": "0.1.1",
-  "identifier": "io.github.bet-tracker.app",
+  "productName": "OpenOdds",
+  "version": "0.2.0",
+  "identifier": "io.github.openodds.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Bet Tracker",
+        "title": "OpenOdds",
         "width": 1320,
         "height": 860,
         "minWidth": 960,
@@ -42,7 +42,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA5OUU4Q0RCNUM3RDI0RTMKUldUakpIMWMyNHllQ1d1Q21GdGo5Vk1HTDJKUVEyOG1HY1VrcXFleTRnUlo3NFB3NVN0eGkvK0sK",
       "endpoints": [
-        "https://github.com/GitRefDeploy/bet-tracker/releases/latest/download/latest.json"
+        "https://github.com/GitRefDeploy/openodds/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"
