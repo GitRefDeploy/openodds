@@ -169,62 +169,30 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # The checks read and parse the manifest, and Node is already the one thing
+      # this repository builds with, so it is the reader they use. A runner image
+      # that happens to include jq would make the same checks unable to run by
+      # hand on a developer machine.
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      # The checks themselves live in scripts/verify-release.sh, which is the same
+      # script that can be pointed at a staged draft by hand — that is how they
+      # were tested, and it is why they are not a block of YAML inlined here.
       - name: Check every installer and the manifest are present
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # This job does not check the code out, so `gh` has no repository to
-          # infer from and would fail before testing anything.
+          # Named explicitly rather than inferred from the checkout: the release
+          # is what is being read, and gh should not have to guess which
+          # repository it belongs to.
           REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-
-          names=$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name')
-          echo "Assets on release $TAG:"
-          printf '%s\n' "$names" | sort
-
-          fail=0
-          for expected in "_x64-setup.exe" "_x86-setup.exe" ".msi" ".deb" ".AppImage" "latest.json"; do
-            # A here-string rather than a pipe: `grep -q` exits on the first
-            # match, which can SIGPIPE the writer, and `pipefail` would then
-            # turn that into a false failure.
-            if grep -qF -- "$expected" <<<"$names"; then
-              echo "ok:   found *$expected"
-            else
-              echo "FAIL: no asset matching *$expected"
-              fail=1
-            fi
-          done
-
-          # An installer without its signature cannot be installed by the
-          # updater, so the two counts must agree.
-          installers=$(grep -cE '\.(msi|exe|deb|AppImage)$' <<<"$names" || true)
-          signatures=$(grep -c '\.sig$' <<<"$names" || true)
-          echo "installers=$installers signatures=$signatures"
-          if [ "$installers" -gt 0 ] && [ "$installers" -eq "$signatures" ]; then
-            echo "ok:   every installer has an updater signature"
-          else
-            echo "FAIL: installers and signatures do not match (updates would be rejected)"
-            fail=1
-          fi
-
-          echo
-          echo "Updater manifest:"
-          gh release download "$TAG" --repo "$REPO" -p latest.json -D "$RUNNER_TEMP" --clobber
-          cat "$RUNNER_TEMP/latest.json"
-
-          echo
-          for key in windows-x86_64 windows-i686 linux-x86_64; do
-            if jq -e --arg k "$key" '.platforms | has($k)' "$RUNNER_TEMP/latest.json" >/dev/null; then
-              echo "ok:   latest.json advertises $key"
-            else
-              echo "FAIL: latest.json is missing the $key entry"
-              fail=1
-            fi
-          done
-
-          [ "$fail" -eq 0 ] || { echo "Release verification failed."; exit 1; }
-          echo "All release checks passed."
+        run: scripts/verify-release.sh
 
       # A failed step aborts the job, so arriving here means every check above
       # passed. Publishing from the workflow rather than leaving it to a person
