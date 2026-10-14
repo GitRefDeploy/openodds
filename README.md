@@ -122,23 +122,6 @@ use. Then either:
   through a bookmaker, a bet, a deposit and an offer, and ticks each one off as
   you go.
 
-## Upgrading from Bet Tracker (v0.1.x)
-
-The app was renamed in v0.2.0: Bet Tracker is now OpenOdds. The rename changed
-the identity your operating system files an application under, so to the OS this
-is a new app rather than an upgrade - and the first launch is built to make that
-invisible. It finds your old install once, copies your bets, bookmakers, promos,
-bankroll, settings and API keys across, and tells you it did. Nothing on the old
-side is moved or deleted.
-
-Don't keep using both: the copy happens once, so anything entered in the old copy
-afterwards stays there. Check your numbers, then uninstall it - they are separate
-applications, so removing one leaves the other alone.
-
-If the first launch could not find your old data, the app says so, and
-[upgrading from Bet Tracker](docs/upgrading-from-bet-tracker.md) has the manual
-route.
-
 ## Your data stays yours
 
 - Everything is in one SQLite file in your own application-data directory. There
