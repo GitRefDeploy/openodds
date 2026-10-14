@@ -55,6 +55,10 @@ commits either way.
 | `src/config/secrets.ts` | Credential storage adapter. |
 | `src-tauri/` | Rust shell — plugin registration and credential commands. |
 
+[docs/architecture.md](docs/architecture.md) goes into the data-layer rules, the
+money rules and the data model, and says which parts of the code exist because
+they were broken once.
+
 ## Tests
 
 Domain logic **must** be covered by unit tests in `src/domain/*.test.ts`. These
@@ -100,7 +104,11 @@ fix the test with an explanation; if the behaviour is wrong, fix the behaviour.
 
 ## Releases and updater signing
 
-Releases are produced by GitHub Actions on a `v*` tag. Please do not enable
+The full process is in [docs/releases.md](docs/releases.md). The two rules a
+change is most likely to break: releases are produced by GitHub Actions on a `v*`
+tag and stay a draft until a verification job publishes them.
+
+Please do not enable
 `bundle.createUpdaterArtifacts` in the base `tauri.conf.json`: it forces every
 contributor to own a signing key before they can run `npm run tauri:build`.
 Signed updater artifacts are enabled only in CI through

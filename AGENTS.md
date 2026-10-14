@@ -1,9 +1,20 @@
 # OpenOdds — working notes
 
 This file exists because the reasoning behind this codebase lives in commit
-bodies, file-header comments and the README, and a long-running session loses
-those to context compaction. Read this first; it is the shortest path back to the
-goals. Where a rule below has a *why*, the why is the part that gets lost.
+bodies, file-header comments, the README and `docs/`, and a long-running session
+loses those to context compaction. Read this first; it is the shortest path back
+to the goals. Where a rule below has a *why*, the why is the part that gets lost.
+
+Where the writing lives. This file restates the rules below deliberately — it is
+the short version you read first — and the files it points at are the long form:
+
+- `README.md` is for **someone who wants to use the app** — what it does, how to
+  install it, and where their data is. Keep it that way; the detail belongs in the
+  files below.
+- `docs/architecture.md` — the developer-facing architecture, money rules and data
+  model.
+- `docs/releases.md` — cutting a release, and the updater's signing and draft gate.
+- `CONTRIBUTING.md` — ground rules, local setup, tests and style.
 
 ## What this is
 
@@ -19,6 +30,12 @@ operating system files an application under, so to the OS this is a new
 application rather than an upgrade of the old one — which is why the Rust side
 copies an older install's database and credential-store entries across once,
 before anything else opens, and tells the user it did.
+
+The manual route for a launch that could not find the old data, which used to be
+`docs/upgrading-from-bet-tracker.md`, has been deleted. The copy-the-database
+steps now live only in git history and in `legacy_roots`/`import_into` in
+`src-tauri/src/lib.rs`, so someone still on v0.1.x is told the import did not
+happen and has nowhere in the docs to be sent.
 
 ## How it runs
 
@@ -271,8 +288,8 @@ rectangle zero-sized, so it renders as nothing.
   feature that is not a bet.
 
 Architecturally, the pure `domain/` core was kept I/O-free so a second shell
-(mobile) is possible later, and the README notes the data model leaves room for
-sync — but there is no sync today.
+(mobile) is possible later, and `docs/architecture.md` notes the data model leaves
+room for sync — but there is no sync today.
 
 ## Open gaps
 
