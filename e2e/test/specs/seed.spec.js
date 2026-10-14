@@ -47,10 +47,22 @@ describe("a fresh install", () => {
     // there is no layout in it — so the assertion lives here, in a real engine.
     const { width, escapees } = await sidebarGeometry();
 
-    expect(
-      escapees.join("\n"),
-      `the sidebar is ${width}px wide and something inside it did not fit`,
-    ).toBe("");
+    // One argument only, and that is the whole point of these two lines.
+    //
+    // `expect` here is expect-webdriverio's, not Vitest's, and the two-argument
+    // form — the value, then a message describing it — throws before it compares
+    // anything: "Expect takes at most one argument". It threw on every run this
+    // assertion ever had, which made it look like a layout failure while it was
+    // in fact reporting that it could not run at all. A check that does not
+    // check is worse than no check, because its red looks like the bug it is
+    // meant to find.
+    //
+    // The width is asserted for the same reason: a sidebar that collapsed to
+    // nothing would contain everything, and this test would pass without having
+    // measured anything. What each escapee says about where it landed, and how
+    // wide the column is, comes through in the failure itself.
+    expect(width).toBeGreaterThan(0);
+    expect(escapees).toEqual([]);
   });
 
   it("records a bet through the import screen", async () => {
