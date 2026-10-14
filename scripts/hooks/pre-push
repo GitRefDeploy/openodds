@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#
+# Refuse to push a ref that carries agent credit.
+#
+# Installed by scripts/install-hooks.mjs, which `npm install` runs. Edit
+# scripts/hooks/pre-push, never the copy in .git/hooks: that copy is replaced on
+# the next install.
+#
+# Ground rule 5 in CONTRIBUTING.md is a rule about what a commit may claim about
+# who wrote it. CI checks it on every push and every pull request, and that is
+# the gate that cannot be skipped — this is the same check, moved earlier, to the
+# last moment the credit can be stopped from leaving the machine.
+#
+# It exists because the checking-only version was not enough. A history that had
+# already been scrubbed still had the credit reachable through two tags and nine
+# pull-request refs; the tags were only found by looking. A push is the one
+# moment where a new copy is still preventable.
+#
+# git hands this hook one line per ref being pushed:
+#
+#   <local ref> <local sha> <remote ref> <remote sha>
+#
+# Only what the push would *add* is checked. A deletion carries an all-zero local
+# sha and is skipped, and so is a ref whose commits are already on a remote, so
+# pushing a branch that merely shares history with a credited one is not blocked
+# — only making the credit reachable again is.
+#
+# To push history that predates the rule and that you did not write yourself:
+#
+#   OPENODDS_SKIP_CREDIT_HOOK=1 git push
+#
+# That only moves the failure, since CI reads the same commits, but it moves it
+# somewhere the commits can be explained.
+
+set -u
+
+if [ "${OPENODDS_SKIP_CREDIT_HOOK:-}" = "1" ]; then
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+checker="$root/scripts/check-credit.sh"
+
+# A hook that cannot find the checker must not block work. A missing script is a
+# broken checkout rather than a commit message, and the gate that matters — CI —
+# does not depend on anything here.
+if [ ! -f "$checker" ]; then
+  echo "pre-push: $checker is missing, so agent credit was not checked." >&2
+  exit 0
+fi
+
+zero=0000000000000000000000000000000000000000
+failed=0
+local_ref=
+local_sha=
+remote_sha=
+
+while read -r local_ref local_sha _remote_ref remote_sha; do
+  # Pushing a deletion adds nothing.
+  [ "$local_sha" = "$zero" ] && continue
+
+  if [ "$remote_sha" = "$zero" ] || ! git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    # Either the remote has no ref of this name, or this clone does not hold the
+    # commit it points at — the state after someone else's force-push. In both
+    # cases the honest question is what this ref would make reachable that no
+    # remote already carries.
+    revs=("$local_sha" --not --remotes)
+  else
+    revs=("${remote_sha}..${local_sha}")
+  fi
+
+  # The checker is asked, rather than a second copy of the pattern kept here: a
+  # rule stated twice is how one of the two stops matching the other.
+  if ! output=$(sh "$checker" commits "${revs[@]}" 2>&1); then
+    printf '%s\n' "$output"
+    echo "pre-push: refusing to push ${local_ref}" >&2
+    failed=1
+  fi
+done
+
+if [ "$failed" -ne 0 ]; then
+  cat >&2 <<'MESSAGE'
+
+A commit's trailer names whoever is accountable for it, and a tool is not. Amend
+the commits listed above, then push again:
+
+  git rebase -i <the commit before the first one listed>
+  git push --force-with-lease
+
+If the credit is in history you did not write, and the push is deliberate:
+
+  OPENODDS_SKIP_CREDIT_HOOK=1 git push
+
+CI reads the same commits and will still reject them, so that is a way to explain
+the history rather than a way around the rule.
+MESSAGE
+  exit 1
+fi
+
+exit 0

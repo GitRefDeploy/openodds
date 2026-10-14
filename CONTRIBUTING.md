@@ -37,6 +37,14 @@ WebDriver first — see [e2e/README.md](e2e/README.md). It checks the one thing 
 other test can: what an install updating from before the rename sees. CI runs it
 on Linux.
 
+`npm install` also installs a **`pre-push` hook**, from `scripts/hooks/` through
+`scripts/install-hooks.mjs`. It runs the same credit check as CI, against the
+commits a push would add, and refuses the push when one of them carries agent
+credit — so the rule is caught before it leaves the machine rather than only
+afterwards. Pushing history you did not write, which the rule cannot be blamed
+for, is what `OPENODDS_SKIP_CREDIT_HOOK=1 git push` is for; CI reads the same
+commits either way.
+
 ## Where things live
 
 | Path | Responsibility |

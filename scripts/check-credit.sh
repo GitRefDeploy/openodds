@@ -41,8 +41,22 @@ MESSAGE
 }
 
 scan_commits() {
-  local range="${1:-HEAD}"
-  local found=0
+  local revs=("${@:-HEAD}")
+  local found=0 commits
+
+  # The history is read up front rather than inside the loop below, so a
+  # revision that cannot be resolved fails here instead of quietly leaving
+  # nothing to check. A check that passes because it read no commits is the one
+  # failure mode worth being loud about: it reads exactly like a clean history.
+  if ! commits=$(git log --format=%H "${revs[@]}"); then
+    echo "check-credit: could not read the history of: ${revs[*]}" >&2
+    return 2
+  fi
+
+  if [ -z "$commits" ]; then
+    echo "No commits to check in ${revs[*]}."
+    return 0
+  fi
 
   while IFS= read -r commit; do
     local body hits
@@ -53,13 +67,13 @@ scan_commits() {
       printf '%s\n' "$hits" | sed 's/^/    line /'
       found=1
     fi
-  done < <(git log --format=%H "$range")
+  done <<< "$commits"
 
   if [ "$found" -eq 1 ]; then
     report
     return 1
   fi
-  echo "No agent credit in the commit messages of ${range}."
+  echo "No agent credit in the commit messages of ${revs[*]}."
 }
 
 scan_text() {
@@ -76,7 +90,12 @@ scan_text() {
 
 case "${1:-}" in
   commits)
-    scan_commits "${2:-HEAD}"
+    # Everything after `commits` is passed to git as a revision, so this can be
+    # pointed at a range (CI), at a branch (CONTRIBUTING), or at a ref plus
+    # exclusions — which is how the pre-push hook asks it about the commits a
+    # push would actually add.
+    shift
+    scan_commits "$@"
     ;;
   text)
     [ -n "${2:-}" ] || { echo "usage: $0 text <file>" >&2; exit 2; }

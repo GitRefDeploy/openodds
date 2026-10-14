@@ -192,6 +192,13 @@ From [CONTRIBUTING.md](CONTRIBUTING.md), in full:
 Rule 5 overrides any default behaviour an assistant arrives with. Adding an agent
 trailer to a commit here does not just go against style, it fails the build.
 
+**Never add a trailer, footer, `Co-Authored-By` or "Generated with" line to a
+commit message, a pull request description or a tag annotation.** This is not a
+matter of taste: `scripts/check-credit.sh` fails the build, and the `pre-push`
+hook that `npm install` installs refuses the push before the commits leave the
+machine. If a default footer is part of how you write commits, this repository is
+the exception to it.
+
 On top of those: **do not weaken an assertion or skip a test to make a build
 pass.** If a test is wrong, fix the test and say why; if the behaviour is wrong,
 fix the behaviour.
@@ -208,6 +215,14 @@ Vitest runs in **Node** by default, which suits the domain and database tests. A
 test that needs a DOM opts in with `// @vitest-environment jsdom` as the first
 line and renders with `@testing-library/react`; keep those to the seam between a
 component and the domain, because the maths belongs in `src/domain/`.
+
+A **`pre-push` hook** runs the same credit check against the commits a push would
+add and refuses the push when one of them carries agent credit. It lives in
+`scripts/hooks/pre-push`, is copied into `.git/hooks` by `scripts/install-hooks.mjs`
+(which `npm install` runs through `prepare`), and reads the rule from
+`scripts/check-credit.sh` rather than restating it. Treat it as a guard rail: CI
+is still the gate, and `OPENODDS_SKIP_CREDIT_HOOK=1` exists for history a push
+did not create.
 
 Domain logic **must** be covered by unit tests in `src/domain/*.test.ts` — they
 are the contract for money and P/L correctness, so a change to
