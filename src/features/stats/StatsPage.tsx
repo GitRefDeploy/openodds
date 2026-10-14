@@ -38,6 +38,20 @@ const STATUS_TONE: Record<
 type PositionFilter = "all" | "running" | "settled";
 
 /**
+ * What an empty list says, per filter.
+ *
+ * Spelled out rather than reusing the filter key as a word: `No {filter}
+ * positions.` reads as "No all positions.", and a sentence assembled out of a
+ * value used elsewhere is how copy goes wrong without anyone editing it. A
+ * count of none is plural in all three.
+ */
+const EMPTY_LIST_WORDING: Record<PositionFilter, string> = {
+  all: "positions",
+  running: "running positions",
+  settled: "settled positions",
+};
+
+/**
  * A position is named after its legs when they agree, which covers arbitrage
  * and middles. A hedge pairing a bonus bet with a qualifying bet has no single
  * name, so it says so rather than picking one arbitrarily.
@@ -171,7 +185,7 @@ export function StatsPage({
           {shown.length === 0 ? (
             <Card>
               <p className="text-sm text-muted">
-                No {filter} positions.
+                No {EMPTY_LIST_WORDING[filter]}.
               </p>
             </Card>
           ) : (
@@ -299,8 +313,9 @@ function PositionCard({
                   </td>
                   <td className="py-1.5 pr-3 text-right text-ink">
                     {money(leg.stake_cents)}
+                    {/* Same word as the Bets row uses, cased the same way. */}
                     {leg.freeStake ? (
-                      <span className="ml-1 text-promo">free</span>
+                      <span className="ml-1 text-promo">Free</span>
                     ) : null}
                   </td>
                   <td className="py-1.5 pr-3 text-right">
@@ -311,9 +326,11 @@ function PositionCard({
                     >
                       {money(leg.potentialPayoutCents)}
                     </span>
+                    {/* A label in its own right, so it leads with a capital:
+                        the word before the figure is cased elsewhere too. */}
                     {worstCase && !position.settled ? (
                       <span className="ml-1.5 text-[11px] text-faint">
-                        worst case
+                        Worst case
                       </span>
                     ) : null}
                   </td>

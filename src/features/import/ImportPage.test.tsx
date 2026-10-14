@@ -53,6 +53,26 @@ function paste(text: string) {
   return box;
 }
 
+/**
+ * Choose a file the way the picker does.
+ *
+ * jsdom's `File` does not implement `text()`, which is the one method the
+ * handler uses, so the stub supplies the two things it reads: the name and the
+ * contents. `files` is read-only on the element, so it is defined rather than
+ * set.
+ */
+function chooseFile(contents: string) {
+  const input = document.querySelector(
+    'input[type="file"]',
+  ) as HTMLInputElement;
+  const file = {
+    name: "statement.csv",
+    text: async () => contents,
+  } as unknown as File;
+  Object.defineProperty(input, "files", { value: [file], configurable: true });
+  fireEvent.change(input);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.listImportRefs.mockResolvedValue(new Set<string>());
@@ -185,6 +205,32 @@ describe("the import screen", () => {
     paste("just one long line of prose");
     expect(
       await screen.findByText(/not something I can read as a statement/),
+    ).toBeTruthy();
+  });
+
+  it("counts a one-line file in the singular", async () => {
+    render(<ImportPage />);
+    await waitFor(() => expect(mocks.listImportRefs).toHaveBeenCalled());
+
+    // A file of one row has to read as one line rather than "1 lines".
+    chooseFile("Date,Description,Stake,Odds,Result,Payout,Bookmaker");
+
+    expect(
+      await screen.findByText(/statement\.csv · 1 line · comma separated/),
+    ).toBeTruthy();
+  });
+
+  it("counts the file's rows rather than the bets in it", async () => {
+    render(<ImportPage />);
+    await waitFor(() => expect(mocks.listImportRefs).toHaveBeenCalled());
+
+    // Two bets under a header is three rows, and the label beside the file name
+    // describes the file. Reporting the two bets here would send someone
+    // looking for a third row that was never missing.
+    chooseFile(STATEMENT);
+
+    expect(
+      await screen.findByText(/statement\.csv · 3 lines · comma separated/),
     ).toBeTruthy();
   });
 });

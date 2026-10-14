@@ -123,6 +123,9 @@ export function ImportPage({ onNavigate }: { onNavigate?: (route: "bets") => voi
   const ready = plan?.bets.filter((bet) => !bet.alreadyImported) ?? [];
   const already = plan ? plan.bets.length - ready.length : 0;
   const warned = plan?.bets.filter((bet) => bet.warnings.length > 0) ?? [];
+  // The file's own rows, header included, which is what the label beside the
+  // file name is counting.
+  const recordCount = prepared?.table.records.length ?? 0;
 
   const setRole = (column: number, role: ColumnRole) => {
     setMapping((previous) => {
@@ -191,7 +194,7 @@ export function ImportPage({ onNavigate }: { onNavigate?: (route: "bets") => voi
             </Button>
             {fileName ? (
               <span className="text-sm text-muted">
-                {fileName} · {prepared?.table.records.length ?? 0} lines ·{" "}
+                {fileName} · {recordCount} line{recordCount === 1 ? "" : "s"} ·{" "}
                 {prepared ? delimiterLabel(prepared.table.delimiter) : "unknown"} separated
               </span>
             ) : (
@@ -392,6 +395,8 @@ export function ImportPage({ onNavigate }: { onNavigate?: (route: "bets") => voi
                   </table>
                   {plan.bets.length > PREVIEW_ROWS ? (
                     <p className="mt-2 text-xs text-faint">
+                      {/* Plural by construction: this only appears when there are
+                          more bets than the preview shows. */}
                       Showing the first {PREVIEW_ROWS} of {plan.bets.length} bets.
                     </p>
                   ) : null}

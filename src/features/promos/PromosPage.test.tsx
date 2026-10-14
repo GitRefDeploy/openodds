@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AppData } from "@/app/DataProvider";
+import type { Promo } from "@/db/types";
 import { PromosPage } from "./PromosPage";
 
 /**
@@ -22,7 +23,7 @@ vi.mock("@/app/DataProvider", () => ({
   useAppData: () => mocks.data,
 }));
 
-function appData(): AppData {
+function appData(overrides: Partial<AppData> = {}): AppData {
   return {
     repo: {
       createPromo: mocks.createPromo,
@@ -39,7 +40,35 @@ function appData(): AppData {
     oddsFormat: "decimal",
     refresh: mocks.refresh,
     saveSetting: vi.fn(),
+    ...overrides,
   };
+}
+
+function promo(overrides: Partial<Promo> = {}): Promo {
+  return {
+    id: 1,
+    name: "30% profit boost",
+    type: "profit_boost",
+    value_type: "percent",
+    value: 30,
+    min_odds: 2,
+    book_id: null,
+    sport_id: null,
+    starts_at: null,
+    ends_at: null,
+    notes: "",
+    created_at: "2026-03-01",
+    ...overrides,
+  };
+}
+
+/** One promo in the list, with however many bets have used it. */
+async function renderWithUsage(count: number): Promise<void> {
+  mocks.data = appData({ promos: [promo()] });
+  mocks.promoUsage.mockResolvedValue([
+    { promo_id: 1, count, total_value_cents: count * 2750 },
+  ]);
+  render(<PromosPage />);
 }
 
 async function openForm() {
@@ -55,6 +84,23 @@ beforeEach(() => {
   mocks.promoUsage.mockResolvedValue([]);
   mocks.refresh.mockResolvedValue(undefined);
   mocks.data = appData();
+});
+
+describe("what a promo says it has been used on", () => {
+  it("counts a single bet in the singular", async () => {
+    await renderWithUsage(1);
+
+    // "Used on 1 bets" is the kind of thing a reader sees before anything else
+    // on the card, so the count and the word have to agree.
+    expect(await screen.findByText("Used on 1 bet")).toBeTruthy();
+    expect(screen.queryByText("Used on 1 bets")).toBeNull();
+  });
+
+  it("still pluralises once more than one bet has used it", async () => {
+    await renderWithUsage(4);
+
+    expect(await screen.findByText("Used on 4 bets")).toBeTruthy();
+  });
 });
 
 describe("the promo value field", () => {

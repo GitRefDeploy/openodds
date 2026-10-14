@@ -254,8 +254,11 @@ export function BetsPage() {
                   {bet.promo_value_cents > 0 ? (
                     <>
                       <Dot />
+                      {/* Named before its figure, like "Position 2.86%" on the
+                          Stats screen: the word leads, so it is capitalised,
+                          rather than trailing the number in lower case. */}
                       <span className="text-positive">
-                        {money(bet.promo_value_cents)} promo
+                        Promo {money(bet.promo_value_cents)}
                       </span>
                     </>
                   ) : null}
@@ -305,8 +308,10 @@ export function BetsPage() {
         cell: (info) => (
           <div className="text-right">
             <div className="text-ink tabular-nums">{money(info.getValue())}</div>
+            {/* Capitalised: it is a label beside the class name that explains
+                why this stake is not cash at risk, not a sentence fragment. */}
             {info.row.original.freeStake ? (
-              <div className="text-[11px] text-promo">free stake</div>
+              <div className="text-[11px] text-promo">Free stake</div>
             ) : null}
           </div>
         ),

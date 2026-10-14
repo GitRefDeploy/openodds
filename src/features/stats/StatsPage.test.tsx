@@ -111,7 +111,8 @@ describe("a position's guaranteed figures", () => {
     render(<StatsPage />);
 
     // Exactly one leg sets the worst case: the one paying $175, not $178.
-    expect(screen.getAllByText("worst case")).toHaveLength(1);
+    expect(screen.getAllByText("Worst case")).toHaveLength(1);
+    expect(screen.queryByText("worst case")).toBeNull();
     // Read off the legs rather than the strip, which shows $175 of its own.
     const legs = within(screen.getByRole("table"));
     expect(legs.getByText("$175.00")).toBeTruthy();
@@ -130,6 +131,26 @@ describe("a position's guaranteed figures", () => {
     expect(summaryValue("Positions")).toBe("1");
     expect(screen.getByText("1 still running")).toBeTruthy();
     expect(screen.getByText("Running")).toBeTruthy();
+  });
+});
+
+describe("how a leg's stake is marked", () => {
+  it("says when the stake was not cash", () => {
+    // A bonus bet's stake was never the punter's money, so the leg says so
+    // beside the figure — the same word the Bets row uses, cased the same way.
+    mocks.data = appData([
+      betView({
+        id: 3,
+        bet_class: "bonus_bet",
+        stake_cents: 2500,
+        odds: 2.4,
+        position_id: 7,
+      }),
+      LEG_B,
+    ]);
+    render(<StatsPage />);
+
+    expect(within(screen.getByRole("table")).getByText("Free")).toBeTruthy();
   });
 });
 
@@ -157,7 +178,7 @@ describe("a position that has not settled", () => {
     ]);
     render(<StatsPage />);
 
-    expect(screen.queryByText("worst case")).toBeNull();
+    expect(screen.queryByText("Worst case")).toBeNull();
     expect(screen.getByText("Settled")).toBeTruthy();
   });
 });

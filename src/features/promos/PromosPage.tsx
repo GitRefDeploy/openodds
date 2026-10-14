@@ -116,6 +116,8 @@ export function PromosPage() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {promos.map((promo) => {
             const u = usageFor(promo.id);
+            // Read once, so the count and the word cannot disagree.
+            const used = u?.count ?? 0;
             return (
               <Card key={promo.id} className="flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-2">
@@ -146,7 +148,7 @@ export function PromosPage() {
                 </p>
                 <div className="mt-auto flex items-center justify-between border-t border-line pt-2 text-xs">
                   <span className="text-muted">
-                    Used on {u?.count ?? 0} bets
+                    Used on {used} bet{used === 1 ? "" : "s"}
                   </span>
                   <span className="text-positive">
                     {formatMoney(u?.total_value_cents ?? 0, currency)} value

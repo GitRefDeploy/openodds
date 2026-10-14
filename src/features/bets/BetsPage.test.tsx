@@ -156,6 +156,18 @@ describe("the density toggle", () => {
     expect(screen.getByText("pays $250.00")).toBeTruthy();
   });
 
+  it("names the promo value rather than leaving its word lower case", () => {
+    mocks.data = appData([
+      betView({ id: 11, odds: 2.4, promo_value_cents: 2750 }),
+    ]);
+    render(<BetsPage />);
+
+    // Metadata, so Comfortable is where it lives.
+    density("Comfortable");
+    expect(screen.getByText("Promo $27.50")).toBeTruthy();
+    expect(screen.queryByText(/promo$/)).toBeNull();
+  });
+
   it("keeps the closing-line edge in both densities", () => {
     mocks.data = appData([betView({ id: 4, odds: 2.1, clv: 2.0 })]);
     render(<BetsPage />);
@@ -165,6 +177,22 @@ describe("the density toggle", () => {
 
     density("Comfortable");
     expect(screen.getByText("+5.0% CLV")).toBeTruthy();
+  });
+});
+
+describe("a free stake in the record", () => {
+  it("labels the stake and the class that made it free", () => {
+    // A bonus bet is the free stake that is never returned: $25 at 2.40 pays
+    // $35 rather than $60, and the row has to say why the stake is not cash at
+    // risk. The label sits beside the class name, so it is cased like a label.
+    mocks.data = appData([
+      betView({ id: 9, bet_class: "bonus_bet", stake_cents: 2500, odds: 2.4 }),
+    ]);
+    render(<BetsPage />);
+
+    expect(screen.getByText("Bonus Bet")).toBeTruthy();
+    expect(screen.getByText("Free stake")).toBeTruthy();
+    expect(screen.queryByText("free stake")).toBeNull();
   });
 });
 
