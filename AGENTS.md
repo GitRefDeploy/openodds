@@ -211,10 +211,11 @@ trailer to a commit here does not just go against style, it fails the build.
 
 **Never add a trailer, footer, `Co-Authored-By` or "Generated with" line to a
 commit message, a pull request description or a tag annotation.** This is not a
-matter of taste: `scripts/check-credit.sh` fails the build, and the `pre-push`
-hook that `npm install` installs refuses the push before the commits leave the
-machine. If a default footer is part of how you write commits, this repository is
-the exception to it.
+matter of taste: `scripts/check-credit.sh` fails the build, and the two hooks
+`npm install` installs refuse the line twice over — a `commit-msg` hook will not
+create the commit, and a `pre-push` hook will not let it reach a remote. If a
+default footer is part of how you write commits, this repository is the exception
+to it.
 
 On top of those: **do not weaken an assertion or skip a test to make a build
 pass.** If a test is wrong, fix the test and say why; if the behaviour is wrong,
@@ -233,13 +234,23 @@ test that needs a DOM opts in with `// @vitest-environment jsdom` as the first
 line and renders with `@testing-library/react`; keep those to the seam between a
 component and the domain, because the maths belongs in `src/domain/`.
 
-A **`pre-push` hook** runs the same credit check against the commits a push would
-add and refuses the push when one of them carries agent credit. It lives in
-`scripts/hooks/pre-push`, is copied into `.git/hooks` by `scripts/install-hooks.mjs`
-(which `npm install` runs through `prepare`), and reads the rule from
-`scripts/check-credit.sh` rather than restating it. Treat it as a guard rail: CI
-is still the gate, and `OPENODDS_SKIP_CREDIT_HOOK=1` exists for history a push
-did not create.
+Two hooks run the credit check before CI gets the chance. A **`commit-msg` hook**
+refuses to create a commit whose message carries agent credit, and a
+**`pre-push` hook** refuses to push commits that were created anyway — so the
+line is stopped where it would be written, and again where it would leave the
+machine. Both live in `scripts/hooks/`, are copied into `.git/hooks` by
+`scripts/install-hooks.mjs` (which `npm install` runs through `prepare`), and read
+the rule from `scripts/check-credit.sh` rather than restating it. Treat them as
+guard rails: CI is still the gate, and `OPENODDS_SKIP_CREDIT_HOOK=1` exists for
+history a push did not create.
+
+The `commit-msg` hook was added because the pre-push one proved too late. A
+footer an assistant added by default had already reached nine pull requests
+before anyone read a refusal, and scrubbing the history afterwards could not
+finish the job: a pull request's head refs on GitHub are read-only, so those
+commits cannot be rewritten and the attribution stayed visible on the pull
+requests themselves. Stopping the line at the commit is the only point where the
+whole cost is avoided.
 
 Domain logic **must** be covered by unit tests in `src/domain/*.test.ts` — they
 are the contract for money and P/L correctness, so a change to

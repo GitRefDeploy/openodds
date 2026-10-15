@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#
+# Refuse to create a commit that credits an agent, tool, bot or service.
+#
+# Installed by scripts/install-hooks.mjs, which `npm install` runs. Edit
+# scripts/hooks/commit-msg, never the copy in .git/hooks: that copy is replaced
+# on the next install.
+#
+# The pre-push hook is the same check at the last moment the credit can still be
+# stopped from leaving the machine. This one moves it further back, to the
+# moment the line would be written down at all, because that is the moment it
+# costs nothing to fix.
+#
+# It exists because the pre-push hook was not enough on its own. An assistant's
+# footer — a trailer naming the tool, and a line saying the commit was generated
+# — reached the remote through nine pull requests before anyone read a push
+# refusal, and the cost of that is not local. Rewriting the history took the
+# credit out of every clone and out of the default branch, but a pull request's
+# head refs on GitHub are read-only: those commits cannot be rewritten, so the
+# attribution stayed visible on the pull requests themselves. A default footer
+# an assistant arrives with is not a reason to keep the line; it is the thing
+# this hook refuses.
+#
+# The message is judged by scripts/check-credit.sh — the same script CI runs —
+# rather than by a second copy of the rule, so prose about a provider is still
+# allowed and only the claim forms are refused.
+#
+# To bypass it, for history the rule cannot be blamed for:
+#
+#   OPENODDS_SKIP_CREDIT_HOOK=1 git commit ...
+#
+# That only moves the failure, since CI reads the same commit.
+
+set -u
+
+if [ "${OPENODDS_SKIP_CREDIT_HOOK:-}" = "1" ]; then
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+checker="$root/scripts/check-credit.sh"
+
+# A hook that cannot find the checker must not block work. A missing script is a
+# broken checkout rather than a commit message, and the gate that matters — CI —
+# does not depend on anything here.
+if [ ! -f "$checker" ]; then
+  echo "commit-msg: $checker is missing, so agent credit was not checked." >&2
+  exit 0
+fi
+
+message=${1:-}
+if [ -z "$message" ] || [ ! -f "$message" ]; then
+  exit 0
+fi
+
+if ! output=$(sh "$checker" text "$message" 2>&1); then
+  printf '%s\n' "$output" >&2
+  cat >&2 <<'MESSAGE'
+
+commit-msg: refusing to create this commit. Take out the line named above. A
+commit message here credits the person accountable for the change and nothing
+else, whether or not the wording came from a default template:
+
+  git commit --amend                     # fix the commit you just made
+  git rebase -i <commit before it>       # or an earlier one in this branch
+
+If the credit is deliberate, and the commit is history you did not write:
+
+  OPENODDS_SKIP_CREDIT_HOOK=1 git commit ...
+
+CI reads the same commit and will still reject it, so that is a way to explain
+the history rather than a way around the rule.
+MESSAGE
+  exit 1
+fi
+
+exit 0
