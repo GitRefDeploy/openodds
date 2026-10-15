@@ -18,7 +18,11 @@ set -euo pipefail
 
 # The names this needs to know about: agent applications, the vendors behind
 # them, and the generic words that give a machine away.
-AGENT='codebuff|claude|anthropic|openai|chatgpt|copilot|cursor|windsurf|devin|aider|codex|gemini|cline|qodo|tabnine|sourcegraph|cody|replit|gpt[[:space:]]*[0-9]|ai|a\.i\.|llm|agent|assistant|bot'
+# `bet[- ]tracker` is this project's own former name, which is in here because
+# it appeared as a commit's co-author: an identity that is not a person is the
+# same problem whatever it is called, and it was the name that got through when
+# the list held only vendor names.
+AGENT='codebuff|claude|anthropic|openai|chatgpt|copilot|cursor|windsurf|devin|aider|codex|gemini|cline|qodo|tabnine|sourcegraph|cody|replit|gpt[[:space:]]*[0-9]|bet[[:space:]-]*tracker|ai|a\.i\.|llm|agent|assistant|bot'
 
 # Any `-By:` trailer — Co-Authored-By, Assisted-By, Generated-By, whatever is
 # invented next — whose value names one of those.
